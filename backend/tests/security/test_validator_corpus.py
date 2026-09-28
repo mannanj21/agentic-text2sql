@@ -7,10 +7,12 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 import yaml
+from hypothesis import given, settings, strategies as st
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlglot import exp
 
 from app.database.models import Connection
-from app.guardrails.sql_validator import ValidationError, validate_sql
+from app.guardrails.sql_validator import FORBIDDEN_NODES, ValidationError, validate_sql
 
 
 def _corpus() -> list[dict[str, str | None]]:
@@ -58,3 +60,29 @@ async def test_validator_security_corpus(
         await validate_sql(str(case["sql"]), _connection(), _db(str(case["id"])))
     assert raised.value.kind == case["kind"]
     mock_explain.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+@pytest.mark.security
+@settings(max_examples=25)
+@given(
+    sql=st.sampled_from(
+        [
+            "SELECT id FROM public.products",
+            "SELECT count(*) FROM public.products",
+            "SELECT id FROM public.products WHERE id = 1",
+        ]
+    ),
+    leading_space=st.text(alphabet=" \t\n", min_size=0, max_size=4),
+    trailing_space=st.text(alphabet=" \t\n", min_size=0, max_size=4),
+)
+async def test_whitespace_mutations_never_validate_forbidden_ast(
+    sql: str, leading_space: str, trailing_space: str
+) -> None:
+    """Fuzz-lite: accepted benign mutations contain no forbidden AST nodes."""
+    with patch("app.guardrails.sql_validator.explain", new_callable=AsyncMock):
+        validated = await validate_sql(
+            f"{leading_space}{sql}{trailing_space}", _connection(), _db("benign")
+        )
+    parsed = exp.maybe_parse(validated.sql, dialect="postgres")
+    assert not any(isinstance(node, FORBIDDEN_NODES) for node in parsed.walk())
