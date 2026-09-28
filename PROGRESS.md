@@ -1,11 +1,11 @@
 # PROGRESS
 
 ## Current
-- Stage: 3 (LLM Layer, Tracing, Execution Module, Minimal Graph) | Step: S3.5 | Status: TODO
+- Stage: 3 (LLM Layer, Tracing, Execution Module, Minimal Graph) | Step: S3.6 | Status: TODO
 - Branch: stage/3-llm-tracing-minimal-graph
-- Last commit: 0588fbb (S3.3 complete)
-- Active model: Codex (GPT-5)
-- Next action: Implement versioned prompts plus generate/answer nodes and result-summary tests.
+- Last commit: (pending S3.5)
+- Active model: Claude Sonnet 4.6 (Thinking)
+- Next action: Implement minimal LangGraph graph (generate→validate→execute→answer), Postgres checkpointer, conversations endpoints, and /query endpoint.
 
 ## Step Checklist
 | Step | Status | Commit | Notes |
@@ -32,7 +32,7 @@
 | S3.2 | DONE | pending | Persisted run lifecycle, node steps, SQL attempts, usage aggregation, errors, and cancellation; Full passed |
 | S3.3 | DONE | pending | Read-only target executor with pinned connections, truncation, SQLSTATE error classification, and real-Postgres coverage; Full passed |
 | S3.4 | DONE | pending | SQLGlot PostgreSQL single-statement SELECT/WITH validator returning opaque ValidatedSQL; Full passed |
-| S3.5 | TODO | — | Prompts, generate/answer nodes |
+| S3.5 | DONE | pending | Versioned prompts (generate_v1, answer_v1), result summary builder, generate/answer nodes, injection-isolation tests; Quick passed |
 | S3.6 | TODO | — | Minimal LangGraph + endpoint |
 | S4.1 | TODO | — | Full SQL validator |
 | S4.2 | TODO | — | Security corpus |
