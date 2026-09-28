@@ -58,11 +58,15 @@ class Connection(Base):
     database: Mapped[str] = mapped_column(String, nullable=False)
     username: Mapped[str] = mapped_column(String, nullable=False)
     encrypted_password: Mapped[str] = mapped_column(String, nullable=False)
+    allowed_schemas: Mapped[list[str]] = mapped_column(
+        JSONB, nullable=False, default=lambda: ["public"]
+    )
     sample_values_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     status: Mapped[str] = mapped_column(String, nullable=False, default="pending")
     last_synced_at: Mapped[datetime.datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    last_sync_error: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     user: Mapped["User"] = relationship("User", back_populates="connections")
     tables: Mapped[list["SchemaTable"]] = relationship(
@@ -93,6 +97,9 @@ class SchemaTable(Base):
     columns: Mapped[list["SchemaColumn"]] = relationship(
         "SchemaColumn", back_populates="table", cascade="all, delete-orphan"
     )
+    indexes: Mapped[list["SchemaIndex"]] = relationship(
+        "SchemaIndex", back_populates="table", cascade="all, delete-orphan"
+    )
 
     __table_args__ = (
         Index("ix_schema_tables_conn_schema_name", "connection_id", "schema", "name", unique=True),
@@ -110,6 +117,7 @@ class SchemaColumn(Base):
     data_type: Mapped[str] = mapped_column(String, nullable=False)
     is_pk: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     is_sensitive: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    sensitive_override: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     sample_values: Mapped[list[str] | None] = mapped_column(JSONB, nullable=True)
     embedding: Mapped[Any | None] = mapped_column(Vector(settings.EMBEDDING_DIM), nullable=True)
@@ -132,6 +140,21 @@ class SchemaRelationship(Base):
     to_column_id: Mapped[str] = mapped_column(
         String, ForeignKey("schema_columns.id", ondelete="CASCADE"), nullable=False
     )
+
+
+class SchemaIndex(Base):
+    __tablename__ = "schema_indexes"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=generate_uuid)
+    table_id: Mapped[str] = mapped_column(
+        String, ForeignKey("schema_tables.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    definition: Mapped[str] = mapped_column(Text, nullable=False)
+
+    table: Mapped["SchemaTable"] = relationship("SchemaTable", back_populates="indexes")
+
+    __table_args__ = (Index("ix_schema_indexes_table_name", "table_id", "name", unique=True),)
 
 
 class GlossaryTerm(Base):

@@ -1,11 +1,11 @@
 # PROGRESS
 
 ## Current
-- Stage: 1 (Backend Foundation, Auth, Seed Databases) | Step: Stage 1 exit | Status: BLOCKED
-- Branch: stage/1-foundation-auth
-- Last commit: 3c0ee57 (S1.5)
+- Stage: 2 (Connections, Security Primitives, Introspection) | Step: S2.7 | Status: COMPLETE
+- Branch: stage/2-connections-introspection
+- Last commit: 47509df (S2.7 schema and glossary endpoints)
 - Active model: Codex (GPT-5)
-- Next action: Reauthenticate GitHub CLI, then open PR, run CI, merge, and tag `stage-1-complete`
+- Next action: Run Stage 2 exit gates, then open and merge the stage PR.
 
 ## Step Checklist
 | Step | Status | Commit | Notes |
@@ -20,14 +20,14 @@
 | S1.2 | DONE | — | App DB layer and Alembic |
 | S1.3 | DONE | — | Auth: register/login/logout |
 | S1.4 | DONE | — | Ownership pattern and authz harness |
-| S1.5 | DONE | to-be-committed | Ecommerce and pinned Pagila demo databases, roles, integration coverage |
-| S2.1 | TODO | — | Credential encryption |
-| S2.2 | TODO | — | Dialect interface |
-| S2.3 | TODO | — | SSRF guard |
-| S2.4 | TODO | — | Connection safety check |
-| S2.5 | TODO | — | Connections API |
-| S2.6 | TODO | — | Introspection |
-| S2.7 | TODO | — | Schema and glossary endpoints |
+| S1.5 | DONE | 3c0ee57 | Ecommerce and pinned Pagila demo databases, roles, integration coverage |
+| S2.1 | DONE | 56c6eab | Fernet credential cipher with versioned key prefix, startup validation, and DB ciphertext coverage |
+| S2.2 | DONE | fbd541e | PostgreSQL dialect contract for introspection, read-only session settings, EXPLAIN, and safety checks |
+| S2.3 | DONE | 6f74dba | Validates all DNS answers and pins target connections to validated IPs via libpq hostaddr |
+| S2.4 | DONE | 8ed225d | Structured role safety report; real PostgreSQL checks reject writer and superuser roles |
+| S2.5 | DONE | 5eafe83 | Authenticated connection CRUD with SSRF, pinned target connect, encryption, safety reports, and ownership coverage |
+| S2.6 | DONE | 987b19c | Target metadata sync with schema filtering, indexes, PKs/FKs, row estimates, conservative sensitive defaults, and failure status |
+| S2.7 | DONE | 47509df | Authenticated schema metadata editing and glossary CRUD with re-sync persistence coverage |
 | S3.1 | TODO | — | LLM client wrapper |
 | S3.2 | TODO | — | Tracing |
 | S3.3 | TODO | — | Execution module |
@@ -87,13 +87,13 @@
 - Node.js: 24.19.0
 - npm: 11.17.0
 - Ollama: 0.34.4
-- gh: installed, but the active GitHub token is invalid
+- gh: authenticated as mannanj21
 - Docker: installed
 - make: MISSING (using scripts/make.py instead)
 - psql: MISSING (optional)
 
 ## Known Issues / Blockers
-- Current: GitHub CLI token for `mannanj21` is invalid, blocking the Stage 1 PR/CI/merge/tag exit procedure. Reauthenticate with `gh auth login -h github.com`.
+- None. Historical entries below are resolved.
 - gh CLI not installed — blocks S0.3 (GitHub remote creation). Will guide human to install when we reach that step.
 - Docker Desktop not installed — blocks S0.6 (Docker Compose). Will guide human to install when we reach that step.
 

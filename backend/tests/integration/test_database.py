@@ -2,13 +2,15 @@ import asyncio
 import os
 import subprocess
 import sys
+import uuid
 
 import pytest
-from sqlalchemy import text
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import create_async_engine
 
 from app.config import get_settings
 from app.database.core import AsyncSessionLocal
+from app.database.crypto import CredentialCipher
 
 if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
@@ -49,6 +51,7 @@ async def test_tables_and_indexes_exist() -> None:
             "connections",
             "schema_tables",
             "schema_columns",
+            "schema_indexes",
             "schema_relationships",
             "glossary_terms",
             "conversations",
@@ -116,3 +119,36 @@ async def test_cascade_delete() -> None:
         assert conn_exists is None
         assert conv_exists is None
         assert run_exists is None
+
+
+async def test_connection_password_is_encrypted_in_the_database() -> None:
+    """Connection rows must never persist the target database password as plaintext."""
+    from app.database.models import Connection, User
+
+    plaintext = "target-password-that-must-not-be-stored"
+    cipher = CredentialCipher(settings.ENCRYPTION_KEY)
+    encrypted = cipher.encrypt(plaintext)
+
+    async with AsyncSessionLocal() as session:
+        user = User(email=f"crypto-{uuid.uuid4()}@example.com", password_hash="hash")
+        session.add(user)
+        await session.flush()
+        connection = Connection(
+            user_id=user.id,
+            name="Encrypted connection",
+            host="db.example.test",
+            port=5432,
+            database="analytics",
+            username="readonly",
+            encrypted_password=encrypted,
+        )
+        session.add(connection)
+        await session.commit()
+
+        stored_password = await session.scalar(
+            select(Connection.encrypted_password).where(Connection.id == connection.id)
+        )
+
+    assert stored_password == encrypted
+    assert stored_password != plaintext
+    assert plaintext not in stored_password

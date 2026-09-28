@@ -1,6 +1,7 @@
 from typing import Literal
 
-from pydantic import SecretStr
+from cryptography.fernet import Fernet
+from pydantic import SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -16,6 +17,16 @@ class Settings(BaseSettings):
     # --- Security ---
     ENCRYPTION_KEY: SecretStr
     SESSION_SECRET: SecretStr
+
+    @field_validator("ENCRYPTION_KEY")
+    @classmethod
+    def encryption_key_must_be_a_fernet_key(cls, value: SecretStr) -> SecretStr:
+        """Fail at startup rather than when a connection is first saved."""
+        try:
+            Fernet(value.get_secret_value().encode("ascii"))
+        except (AttributeError, ValueError) as exc:
+            raise ValueError("ENCRYPTION_KEY must be a valid Fernet key.") from exc
+        return value
 
     # --- SSRF ---
     ALLOW_PRIVATE_HOSTS: bool = False

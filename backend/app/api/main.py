@@ -1,3 +1,4 @@
+import logging
 import uuid
 from collections.abc import Awaitable, Callable
 
@@ -5,8 +6,12 @@ from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
 
 from app.api.auth import router as auth_router
+from app.api.connections import router as connections_router
+from app.api.schema import router as schema_router
 from app.config import get_settings
 from app.logging import request_id_ctx, setup_logging
+
+logger = logging.getLogger(__name__)
 
 
 def create_app() -> FastAPI:
@@ -16,6 +21,11 @@ def create_app() -> FastAPI:
     setup_logging()
 
     settings = get_settings()
+    if settings.ALLOW_PRIVATE_HOSTS:
+        logger.warning(
+            "allow_private_hosts_enabled",
+            extra={"security_warning": "SSRF private-address protection is disabled"},
+        )
 
     app = FastAPI(
         title="Agentic Text-to-SQL Analytics Platform",
@@ -38,6 +48,8 @@ def create_app() -> FastAPI:
 
     # Routes
     app.include_router(auth_router)
+    app.include_router(connections_router)
+    app.include_router(schema_router)
 
     @app.get("/health", tags=["System"])
     async def health_check() -> JSONResponse:
