@@ -1,11 +1,11 @@
 # PROGRESS
 
 ## Current
-- Stage: 3 (LLM Layer, Tracing, Execution Module, Minimal Graph) | Step: S3.6 | Status: DONE
+- Stage: 4 (Safety, Repair, SSE) | Step: S4.2 | Status: IN PROGRESS
 - Branch: stage/3-llm-tracing-minimal-graph
-- Last commit: (pending S3.6)
+- Last commit: (pending S4.1)
 - Active model: Gemini 3.1 Pro (High)
-- Next action: PR and merge stage 3, then proceed to Stage 4 (S4.1: Full SQL Validator).
+- Next action: Complete the security corpus tests and generated security report for S4.2.
 
 ## Step Checklist
 | Step | Status | Commit | Notes |
@@ -34,8 +34,8 @@
 | S3.4 | DONE | pending | SQLGlot PostgreSQL single-statement SELECT/WITH validator returning opaque ValidatedSQL; Full passed |
 | S3.5 | DONE | pending | Versioned prompts (generate_v1, answer_v1), result summary builder, generate/answer nodes, injection-isolation tests; Quick passed |
 | S3.6 | DONE | pending | Minimal LangGraph pipeline (generate→validate→execute→answer), Conversations API with RunRecorder tracing, AgentState as TypedDict; Full and Stack passed |
-| S4.1 | TODO | — | Full SQL validator |
-| S4.2 | TODO | — | Security corpus |
+| S4.1 | DONE | pending | Full async SQL validator: structural/function/schema/sensitive-column checks and read-only EXPLAIN validation; Full passed |
+| S4.2 | IN PROGRESS | — | Security corpus |
 | S4.3 | TODO | — | No-unvalidated-execution enforcement |
 | S4.4 | TODO | — | Guardrail node |
 | S4.5 | TODO | — | Repair loop |

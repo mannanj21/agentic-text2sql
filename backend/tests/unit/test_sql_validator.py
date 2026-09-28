@@ -1,8 +1,36 @@
-import pytest
+from unittest.mock import AsyncMock, patch
 
+import pytest
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.database.models import Connection
 from app.guardrails.sql_validator import ValidationError, validate_sql
 
 
+@pytest.fixture
+def mock_db() -> AsyncMock:
+    from unittest.mock import MagicMock
+
+    db = AsyncMock(spec=AsyncSession)
+    # mock db.execute().all() to return no sensitive columns
+    db.execute.return_value.all = MagicMock(return_value=[])
+    return db
+
+
+@pytest.fixture
+def mock_connection() -> Connection:
+    return Connection(
+        id="test_conn",
+        host="localhost",
+        port=5432,
+        username="test",
+        encrypted_password=b"encrypted",
+        database="testdb",
+        allowed_schemas=["public"],
+    )
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "sql",
     [
@@ -11,11 +39,16 @@ from app.guardrails.sql_validator import ValidationError, validate_sql
         "select 1;",
     ],
 )
-def test_accepts_select_statements(sql: str) -> None:
-    validated = validate_sql(sql)
+@patch("app.guardrails.sql_validator.explain")
+async def test_accepts_select_statements(
+    mock_explain: AsyncMock, sql: str, mock_connection: Connection, mock_db: AsyncMock
+) -> None:
+    validated = await validate_sql(sql, mock_connection, mock_db)
     assert validated.sql.upper().startswith(("SELECT", "WITH"))
+    mock_explain.assert_called_once()
 
 
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     ("sql", "kind"),
     [
@@ -28,7 +61,11 @@ def test_accepts_select_statements(sql: str) -> None:
         ("SELECT FROM", "syntax"),
     ],
 )
-def test_rejects_non_readonly_or_invalid_sql(sql: str, kind: str) -> None:
+@patch("app.guardrails.sql_validator.explain")
+async def test_rejects_non_readonly_or_invalid_sql(
+    mock_explain: AsyncMock, sql: str, kind: str, mock_connection: Connection, mock_db: AsyncMock
+) -> None:
     with pytest.raises(ValidationError) as raised:
-        validate_sql(sql)
+        await validate_sql(sql, mock_connection, mock_db)
     assert raised.value.kind == kind
+    mock_explain.assert_not_called()

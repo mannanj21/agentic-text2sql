@@ -6,6 +6,7 @@ from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agent.graph import build_graph
 from app.agent.nodes import AnswerOutput, GenerateOutput
@@ -25,7 +26,25 @@ def _fake_connection() -> Any:
     conn.database = "testdb"
     conn.username = "readonly"
     conn.encrypted_password = "ENC"  # noqa: S105
+    conn.allowed_schemas = ["public"]
     return conn
+
+
+def _fake_db() -> AsyncMock:
+    """Return an async DB session whose metadata query has no sensitive columns."""
+    db = AsyncMock(spec=AsyncSession)
+    result = MagicMock()
+    result.all.return_value = []
+    db.execute.return_value = result
+    return db
+
+
+@pytest.fixture(autouse=True)
+def _stub_validator_explain(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Keep graph tests unit-level while the validator owns the EXPLAIN boundary."""
+    from app.guardrails import sql_validator
+
+    monkeypatch.setattr(sql_validator, "explain", AsyncMock())
 
 
 def _base_state(**overrides: object) -> dict[str, Any]:
@@ -91,7 +110,8 @@ async def test_happy_path_returns_completed_status(monkeypatch: pytest.MonkeyPat
     monkeypatch.setattr(graph_mod, "execute", mock_execute)
 
     fake = _good_fake()
-    graph = build_graph(fake, _fake_connection())
+    db_mock = _fake_db()
+    graph = build_graph(fake, _fake_connection(), db_mock)
     final = await graph.ainvoke(_base_state())
 
     assert final["status"] == "completed"
@@ -123,7 +143,8 @@ async def test_validation_failure_does_not_reach_execute(
             "answer": [],
         }
     )
-    graph = build_graph(fake, _fake_connection())
+    db_mock = _fake_db()
+    graph = build_graph(fake, _fake_connection(), db_mock)
     final = await graph.ainvoke(_base_state())
 
     assert final["status"] == "failed"
@@ -143,7 +164,8 @@ async def test_execute_error_yields_controlled_failure(
     )
 
     fake = _good_fake()
-    graph = build_graph(fake, _fake_connection())
+    db_mock = _fake_db()
+    graph = build_graph(fake, _fake_connection(), db_mock)
     final = await graph.ainvoke(_base_state())
 
     assert final["status"] == "failed"
@@ -161,7 +183,8 @@ async def test_llm_generate_error_yields_controlled_failure(
     monkeypatch.setattr(graph_mod, "execute", mock_execute)
 
     fake = FakeLLM({"generate": [LLMProviderError("provider down")], "answer": []})
-    graph = build_graph(fake, _fake_connection())
+    db_mock = _fake_db()
+    graph = build_graph(fake, _fake_connection(), db_mock)
     final = await graph.ainvoke(_base_state())
 
     assert final["status"] == "failed"
@@ -185,7 +208,8 @@ async def test_state_contains_no_credentials(monkeypatch: pytest.MonkeyPatch) ->
     )
 
     fake = _good_fake()
-    graph = build_graph(fake, _fake_connection())
+    db_mock = _fake_db()
+    graph = build_graph(fake, _fake_connection(), db_mock)
     final = await graph.ainvoke(_base_state())
 
     serialized = json.dumps(final)
@@ -212,7 +236,8 @@ async def test_state_contains_no_raw_rows_beyond_preview(
     )
 
     fake = _good_fake("SELECT x FROM public.t")
-    graph = build_graph(fake, _fake_connection())
+    db_mock = _fake_db()
+    graph = build_graph(fake, _fake_connection(), db_mock)
     final = await graph.ainvoke(_base_state())
 
     # Rows 20-24 must not appear in the preview

@@ -10,6 +10,7 @@ import datetime
 from typing import Any, Literal, TypedDict
 
 from langgraph.graph import END, StateGraph
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agent.nodes import (
     AnswerOutput,
@@ -105,7 +106,9 @@ async def generate_node(state: dict[str, Any], *, llm: FakeLLM | LLMClient) -> d
     }
 
 
-def validate_node(state: dict[str, Any]) -> dict[str, Any]:
+async def validate_node(
+    state: dict[str, Any], *, connection: Connection, db: AsyncSession
+) -> dict[str, Any]:
     """Validate the generated SQL; sets validated_sql or fails."""
     sql = state.get("generated_sql", "")
     if not sql:
@@ -115,7 +118,7 @@ def validate_node(state: dict[str, Any]) -> dict[str, Any]:
             "error_kind": "empty_sql",
         }
     try:
-        validated = validate_sql(sql)
+        validated = await validate_sql(sql, connection, db)
     except ValidationError as exc:
         return {
             "status": "failed",
@@ -214,6 +217,7 @@ def _route_after_execute(state: dict[str, Any]) -> str:
 def build_graph(
     llm: FakeLLM | LLMClient,
     connection: Connection,
+    db: AsyncSession,
 ) -> Any:
     """Build and compile the agent graph.
 
@@ -224,8 +228,8 @@ def build_graph(
     async def _generate(state: dict[str, Any]) -> dict[str, Any]:
         return await generate_node(state, llm=llm)
 
-    def _validate(state: dict[str, Any]) -> dict[str, Any]:
-        return validate_node(state)
+    async def _validate(state: dict[str, Any]) -> dict[str, Any]:
+        return await validate_node(state, connection=connection, db=db)
 
     async def _execute(state: dict[str, Any]) -> dict[str, Any]:
         return await execute_node(state, connection=connection)

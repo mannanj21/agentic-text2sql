@@ -277,7 +277,7 @@ async def query_conversation(
         async with recorder.step("generate"):
             pass  # Graph handles its own execution; step is used for timing
 
-        graph = build_graph(llm, connection)
+        graph = build_graph(llm, connection, db)
         final_state: dict[str, Any] = await graph.ainvoke(initial_state)
 
         run = recorder.run
