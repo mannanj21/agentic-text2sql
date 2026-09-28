@@ -1,11 +1,11 @@
 # PROGRESS
 
 ## Current
-- Stage: 2 (Connections, Security Primitives, Introspection) | Step: S2.7 | Status: COMPLETE
-- Branch: stage/2-connections-introspection
-- Last commit: 47509df (S2.7 schema and glossary endpoints)
+- Stage: 3 (LLM Layer, Tracing, Execution Module, Minimal Graph) | Step: S3.1 | Status: IN PROGRESS
+- Branch: stage/3-llm-tracing-minimal-graph
+- Last commit: cb108ea (Stage 2 merged)
 - Active model: Codex (GPT-5)
-- Next action: Run Stage 2 exit gates, then open and merge the stage PR.
+- Next action: Implement the provider-agnostic LLM client wrapper; H4 requires a Gemini API key for the real-provider smoke test.
 
 ## Step Checklist
 | Step | Status | Commit | Notes |
