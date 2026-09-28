@@ -1,11 +1,11 @@
 # PROGRESS
 
 ## Current
-- Stage: 1 (Backend Foundation, Auth, Seed Databases) | Step: S1.1 | Status: TODO
+- Stage: 1 (Backend Foundation, Auth, Seed Databases) | Step: Stage 1 exit | Status: BLOCKED
 - Branch: stage/1-foundation-auth
-- Last commit: 9442cc5 (Stage 0 complete)
-- Active model: Gemini 3.1 Pro
-- Next action: S1.1 FastAPI app, config, structured logging
+- Last commit: 3c0ee57 (S1.5)
+- Active model: Codex (GPT-5)
+- Next action: Reauthenticate GitHub CLI, then open PR, run CI, merge, and tag `stage-1-complete`
 
 ## Step Checklist
 | Step | Status | Commit | Notes |
@@ -16,11 +16,11 @@
 | S0.4 | DONE | 131f79b | Scaffold, pyproject.toml, Makefile, AGENTS.md, PROGRESS.md created |
 | S0.5 | DONE | 9442cc5 | CI configured and passed |
 | S0.6 | DONE | f5af33f | Docker Compose for app-db created, smoke test passed |
-| S1.1 | TODO | — | FastAPI app, config, logging |
-| S1.2 | TODO | — | App DB layer and Alembic |
-| S1.3 | TODO | — | Auth: register/login/logout |
-| S1.4 | TODO | — | Ownership pattern and authz harness |
-| S1.5 | TODO | — | Seed databases |
+| S1.1 | DONE | 2e18632 | FastAPI app, config, logging |
+| S1.2 | DONE | — | App DB layer and Alembic |
+| S1.3 | DONE | — | Auth: register/login/logout |
+| S1.4 | DONE | — | Ownership pattern and authz harness |
+| S1.5 | DONE | to-be-committed | Ecommerce and pinned Pagila demo databases, roles, integration coverage |
 | S2.1 | TODO | — | Credential encryption |
 | S2.2 | TODO | — | Dialect interface |
 | S2.3 | TODO | — | SSRF guard |
@@ -74,6 +74,7 @@
 | S9.7 | TODO | — | Resume bullets |
 
 ## Decisions Log
+- 2026-09-29 Pagila is vendored from the pinned `pagila-v3.1.0` release, rather than the moving default branch, because current upstream requires PostgreSQL 18+ while the local demo uses PostgreSQL 16.
 - 2026-09-28 Native Windows with PowerShell instead of WSL2 because human prefers direct Windows development. PowerShell make.py equivalent provided. All scripts use cross-platform Python.
 - 2026-09-28 `docs/SPEC.md` exists but is empty; proceeding with implementation plan detail which embeds enough spec info. Will populate SPEC.md if human provides content.
 - 2026-09-28 Pre-commit hooks configured with gitleaks, ruff, and standard hygiene hooks. Installation deferred until first commit (S0.2).
@@ -86,12 +87,13 @@
 - Node.js: 24.19.0
 - npm: 11.17.0
 - Ollama: 0.34.4
-- gh: MISSING (needed S0.3)
-- Docker: MISSING (needed S0.6)
+- gh: installed, but the active GitHub token is invalid
+- Docker: installed
 - make: MISSING (using scripts/make.py instead)
 - psql: MISSING (optional)
 
 ## Known Issues / Blockers
+- Current: GitHub CLI token for `mannanj21` is invalid, blocking the Stage 1 PR/CI/merge/tag exit procedure. Reauthenticate with `gh auth login -h github.com`.
 - gh CLI not installed — blocks S0.3 (GitHub remote creation). Will guide human to install when we reach that step.
 - Docker Desktop not installed — blocks S0.6 (Docker Compose). Will guide human to install when we reach that step.
 
