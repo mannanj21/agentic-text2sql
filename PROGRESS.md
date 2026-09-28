@@ -3,7 +3,7 @@
 ## Current
 - Stage: 4 (Safety, Repair, SSE) | Step: S4.2 | Status: IN PROGRESS
 - Branch: stage/3-llm-tracing-minimal-graph
-- Last commit: (pending S4.1)
+- Last commit: 3528570 (S4.1)
 - Active model: Gemini 3.1 Pro (High)
 - Next action: Complete the security corpus tests and generated security report for S4.2.
 

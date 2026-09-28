@@ -1,0 +1,141 @@
+# Security testing corpus for the SQL validator and database layer.
+
+- id: valid_simple_select
+  sql: "SELECT id, name FROM public.products"
+  expected: "pass"
+  kind: null
+
+- id: multi_statement
+  sql: "SELECT 1; DELETE FROM users;"
+  expected: "blocked"
+  kind: "multi_statement"
+
+- id: data_modifying_cte
+  sql: "WITH deleted AS (DELETE FROM users RETURNING id) SELECT * FROM deleted;"
+  expected: "blocked"
+  kind: "unauthorized_node"
+
+- id: select_into
+  sql: "SELECT * INTO new_table FROM users;"
+  expected: "blocked"
+  kind: "unauthorized_node"
+
+- id: for_update
+  sql: "SELECT * FROM users FOR UPDATE;"
+  expected: "blocked"
+  kind: "unauthorized_node"
+
+- id: copy_command
+  sql: "COPY users TO '/etc/passwd';"
+  expected: "blocked"
+  kind: "unauthorized_node"
+
+- id: pg_sleep_func
+  sql: "SELECT pg_sleep(10);"
+  expected: "blocked"
+  kind: "forbidden_function"
+
+- id: schema_qualified_sleep
+  sql: "SELECT pg_catalog.pg_sleep(10);"
+  expected: "blocked"
+  kind: "forbidden_function"
+
+- id: pg_read_file
+  sql: "SELECT pg_read_file('/etc/passwd');"
+  expected: "blocked"
+  kind: "forbidden_function"
+
+- id: pg_ls_dir
+  sql: "SELECT pg_ls_dir('/');"
+  expected: "blocked"
+  kind: "forbidden_function"
+
+- id: lo_import
+  sql: "SELECT lo_import('/etc/passwd');"
+  expected: "blocked"
+  kind: "forbidden_function"
+
+- id: dblink_connect
+  sql: "SELECT dblink_connect('dbname=postgres');"
+  expected: "blocked"
+  kind: "forbidden_function"
+
+- id: set_config
+  sql: "SELECT set_config('log_statement', 'all', false);"
+  expected: "blocked"
+  kind: "forbidden_function"
+
+- id: benign_lookalike_column
+  sql: "SELECT id, updated_at, pg_sleep_column FROM public.users;"
+  expected: "pass"
+  kind: null
+
+- id: benign_lookalike_string
+  sql: "SELECT 'DROP TABLE users;' AS benign_string;"
+  expected: "pass"
+  kind: null
+
+- id: comment_trick_1
+  sql: "SELECT /* pg_sleep(10) */ 1;"
+  expected: "pass"
+  kind: null
+
+- id: comment_trick_2
+  sql: "SELECT 1; -- pg_sleep(10)"
+  expected: "blocked"
+  kind: "multi_statement"
+
+- id: case_trick
+  sql: "SELECT PG_SLEEP(10);"
+  expected: "blocked"
+  kind: "forbidden_function"
+
+- id: quoted_identifier_trick
+  sql: 'SELECT "pg_sleep"(10);'
+  expected: "blocked"
+  kind: "forbidden_function"
+
+- id: catalog_access
+  sql: "SELECT * FROM pg_catalog.pg_class;"
+  expected: "blocked"
+  kind: "forbidden_schema"
+
+- id: information_schema_access
+  sql: "SELECT * FROM information_schema.tables;"
+  expected: "blocked"
+  kind: "forbidden_schema"
+
+- id: sensitive_column_direct
+  sql: "SELECT email FROM public.customers;"
+  expected: "blocked"
+  kind: "sensitive_column"
+
+- id: sensitive_column_star
+  sql: "SELECT * FROM public.customers;"
+  expected: "blocked"
+  kind: "sensitive_column"
+
+- id: stacked_query_semicolon
+  sql: "SELECT 1; SELECT 2;"
+  expected: "blocked"
+  kind: "multi_statement"
+
+- id: dollar_quoting_trick
+  sql: "SELECT $$DROP TABLE users$$;"
+  expected: "pass"
+  kind: null
+
+- id: create_temp_table
+  sql: "CREATE TEMP TABLE t (id int);"
+  expected: "blocked"
+  kind: "unauthorized_node"
+
+- id: set_role
+  sql: "SET ROLE postgres;"
+  expected: "blocked"
+  kind: "unauthorized_node"
+
+- id: do_block
+  sql: "DO $$ BEGIN PERFORM pg_sleep(10); END $$;"
+  expected: "blocked"
+  kind: "unauthorized_node"

@@ -25,6 +25,7 @@ class ValidationError(ValueError):
 # Nodes that are explicitly forbidden
 FORBIDDEN_NODES = (
     exp.Command,
+    exp.Copy,
     exp.Into,
     exp.Lock,
     exp.Insert,
@@ -239,7 +240,7 @@ async def validate_sql(sql: str, connection: Connection, db: AsyncSession) -> Va
         raise ValidationError("empty", "SQL must not be empty.")
 
     try:
-        statements = sqlglot.parse(sql, read="postgres")
+        statements = [statement for statement in sqlglot.parse(sql, read="postgres") if statement]
     except ParseError as exc:
         raise ValidationError("syntax", "SQL could not be parsed.") from exc
 
@@ -247,18 +248,16 @@ async def validate_sql(sql: str, connection: Connection, db: AsyncSession) -> Va
         raise ValidationError("multi_statement", "Exactly one SQL statement is required.")
 
     statement = statements[0]
+    _check_ast(statement)
     if not isinstance(statement, exp.Query):
         raise ValidationError(
             "statement_type", "Only SELECT or WITH SELECT statements are allowed."
         )
 
-    # 1. AST Structural Checks
-    _check_ast(statement)
-
-    # 2. Semantic Checks (Schemas, Sensitive Columns)
+    # 1. Semantic Checks (Schemas, Sensitive Columns)
     await _check_schema_and_columns(statement, connection, db)
 
-    # 3. EXPLAIN Check (Defense in depth at the database level)
+    # 2. EXPLAIN Check (Defense in depth at the database level)
     # The normalized SQL string
     normalized_sql = statement.sql(dialect="postgres")
 
