@@ -1,21 +1,21 @@
 # PROGRESS
 
 ## Current
-- Stage: 0 (Environment, Repo, GitHub, CI Skeleton) | Step: S0.5 | Status: TODO
-- Branch: stage/0-bootstrap
-- Last commit: (will commit S0.4 next)
+- Stage: 1 (Backend Foundation, Auth, Seed Databases) | Step: S1.1 | Status: TODO
+- Branch: stage/1-foundation-auth
+- Last commit: 9442cc5 (Stage 0 complete)
 - Active model: Gemini 3.1 Pro
-- Next action: Set up CI v0 (S0.5)
+- Next action: S1.1 FastAPI app, config, structured logging
 
 ## Step Checklist
 | Step | Status | Commit | Notes |
 |---|---|---|---|
-| S0.1 | DONE | — | Env audit done; gh, Docker, make missing (deferred to when needed) |
-| S0.2 | DONE | — | git init, .gitignore, .gitattributes, .env.example, LICENSE, README created |
-| S0.3 | TODO | — | Needs gh CLI install (H2 checkpoint) |
-| S0.4 | DONE | — | Scaffold, pyproject.toml, Makefile, AGENTS.md, PROGRESS.md created |
-| S0.5 | TODO | — | CI v0 |
-| S0.6 | TODO | — | Docker Compose for app-db (needs Docker install) |
+| S0.1 | DONE | — | Env audit done; gh, Docker installed later |
+| S0.2 | DONE | 516e75f | git init, .gitignore, .gitattributes, .env.example, LICENSE, README created |
+| S0.3 | DONE | — | gh CLI installed, GitHub remote created |
+| S0.4 | DONE | 131f79b | Scaffold, pyproject.toml, Makefile, AGENTS.md, PROGRESS.md created |
+| S0.5 | DONE | 9442cc5 | CI configured and passed |
+| S0.6 | DONE | f5af33f | Docker Compose for app-db created, smoke test passed |
 | S1.1 | TODO | — | FastAPI app, config, logging |
 | S1.2 | TODO | — | App DB layer and Alembic |
 | S1.3 | TODO | — | Auth: register/login/logout |
