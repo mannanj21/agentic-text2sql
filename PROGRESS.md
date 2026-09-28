@@ -1,11 +1,11 @@
 # PROGRESS
 
 ## Current
-- Stage: 2 (Connections, Security Primitives, Introspection) | Step: S2.4 | Status: IN PROGRESS
+- Stage: 2 (Connections, Security Primitives, Introspection) | Step: S2.5 | Status: IN PROGRESS
 - Branch: stage/2-connections-introspection
-- Last commit: 6f74dba (S2.3 SSRF guard)
+- Last commit: 8ed225d (S2.4 connection safety check)
 - Active model: Codex (GPT-5)
-- Next action: Implement the PostgreSQL connection safety check using the dialect safety queries
+- Next action: Implement authenticated connection CRUD and safety-checked creation endpoints
 
 ## Step Checklist
 | Step | Status | Commit | Notes |
@@ -24,7 +24,7 @@
 | S2.1 | DONE | 56c6eab | Fernet credential cipher with versioned key prefix, startup validation, and DB ciphertext coverage |
 | S2.2 | DONE | fbd541e | PostgreSQL dialect contract for introspection, read-only session settings, EXPLAIN, and safety checks |
 | S2.3 | DONE | 6f74dba | Validates all DNS answers and pins target connections to validated IPs via libpq hostaddr |
-| S2.4 | TODO | — | Connection safety check |
+| S2.4 | DONE | 8ed225d | Structured role safety report; real PostgreSQL checks reject writer and superuser roles |
 | S2.5 | TODO | — | Connections API |
 | S2.6 | TODO | — | Introspection |
 | S2.7 | TODO | — | Schema and glossary endpoints |
