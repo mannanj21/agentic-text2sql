@@ -1,6 +1,7 @@
 import pytest
 from cryptography.fernet import Fernet
 
+from app.config import Settings
 from app.database.crypto import CredentialCipher, CredentialEncryptionError
 
 
@@ -27,3 +28,11 @@ def test_credential_cipher_rejects_wrong_key_and_bad_prefix() -> None:
 def test_credential_cipher_rejects_missing_or_invalid_key() -> None:
     with pytest.raises(CredentialEncryptionError, match="valid Fernet key"):
         CredentialCipher("")
+
+
+def test_settings_refuse_to_start_without_an_encryption_key(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("ENCRYPTION_KEY", raising=False)
+    with pytest.raises(ValueError, match="ENCRYPTION_KEY"):
+        Settings(_env_file=None)
