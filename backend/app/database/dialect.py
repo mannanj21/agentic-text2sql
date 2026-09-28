@@ -9,12 +9,27 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Protocol
 
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncConnection
+
 
 @dataclass(frozen=True)
 class SessionSettings:
     """Statements and bind values required for a read-only target DB session."""
 
     statements: Sequence[tuple[str, tuple[int, ...]]]
+
+
+@dataclass(frozen=True)
+class ConnectionSafetyReport:
+    """Structured outcome of a target database role safety inspection."""
+
+    reasons: tuple[str, ...]
+    default_transaction_read_only: bool
+
+    @property
+    def is_safe(self) -> bool:
+        return not self.reasons
 
 
 class Dialect(Protocol):
@@ -32,6 +47,10 @@ class Dialect(Protocol):
 
     def safety_check_queries(self) -> Mapping[str, str]: ...
 
+    async def check_connection_safety(
+        self, connection: AsyncConnection, *, schemas: Sequence[str]
+    ) -> ConnectionSafetyReport: ...
+
 
 @dataclass(frozen=True)
 class PostgresDialect:
@@ -46,14 +65,14 @@ class PostgresDialect:
                 FROM pg_class AS c
                 JOIN pg_namespace AS n ON n.oid = c.relnamespace
                 WHERE c.relkind IN ('r', 'p', 'v', 'm')
-                  AND n.nspname = ANY(%(schemas)s)
+                  AND n.nspname = ANY(:schemas)
                 ORDER BY n.nspname, c.relname
             """,
             "columns": """
                 SELECT table_schema AS schema, table_name, column_name, data_type,
                        udt_name, ordinal_position, is_nullable
                 FROM information_schema.columns
-                WHERE table_schema = ANY(%(schemas)s)
+                WHERE table_schema = ANY(:schemas)
                 ORDER BY table_schema, table_name, ordinal_position
             """,
             "primary_keys": """
@@ -64,7 +83,7 @@ class PostgresDialect:
                   ON tc.constraint_name = kcu.constraint_name
                  AND tc.table_schema = kcu.table_schema
                 WHERE tc.constraint_type = 'PRIMARY KEY'
-                  AND tc.table_schema = ANY(%(schemas)s)
+                  AND tc.table_schema = ANY(:schemas)
                 ORDER BY tc.table_schema, tc.table_name, kcu.ordinal_position
             """,
             "foreign_keys": """
@@ -80,13 +99,13 @@ class PostgresDialect:
                   ON ccu.constraint_name = tc.constraint_name
                  AND ccu.table_schema = tc.table_schema
                 WHERE tc.constraint_type = 'FOREIGN KEY'
-                  AND tc.table_schema = ANY(%(schemas)s)
+                  AND tc.table_schema = ANY(:schemas)
             """,
             "indexes": """
                 SELECT schemaname AS schema, tablename AS table_name, indexname,
                        indexdef
                 FROM pg_indexes
-                WHERE schemaname = ANY(%(schemas)s)
+                WHERE schemaname = ANY(:schemas)
                 ORDER BY schemaname, tablename, indexname
             """,
         }
@@ -119,7 +138,7 @@ class PostgresDialect:
                 FROM pg_class AS c
                 JOIN pg_namespace AS n ON n.oid = c.relnamespace
                 WHERE c.relkind IN ('r', 'p', 'v', 'm')
-                  AND n.nspname = ANY(%(schemas)s)
+                  AND n.nspname = ANY(:schemas)
                   AND has_table_privilege(
                       current_user, c.oid, 'INSERT, UPDATE, DELETE, TRUNCATE'
                   )
@@ -127,7 +146,7 @@ class PostgresDialect:
             "schema_create_privileges": """
                 SELECT nspname AS schema
                 FROM pg_namespace
-                WHERE nspname = ANY(%(schemas)s)
+                WHERE nspname = ANY(:schemas)
                   AND has_schema_privilege(current_user, oid, 'CREATE')
             """,
             "privileged_role_memberships": """
@@ -140,3 +159,80 @@ class PostgresDialect:
             """,
             "default_transaction_read_only": "SHOW default_transaction_read_only",
         }
+
+    async def check_connection_safety(
+        self, connection: AsyncConnection, *, schemas: Sequence[str]
+    ) -> ConnectionSafetyReport:
+        """Inspect the connected role and report whether it is safe to use.
+
+        This method consumes an existing connection; it never creates a target
+        connection itself, preserving the target-connection boundary.
+        """
+        if not schemas:
+            raise ValueError("At least one allowed schema is required for a safety check.")
+        queries = self.safety_check_queries()
+        role = (await connection.execute(text(queries["role_attributes"]))).mappings().one()
+        write_tables = (
+            (
+                await connection.execute(
+                    text(queries["table_write_privileges"]), {"schemas": list(schemas)}
+                )
+            )
+            .mappings()
+            .all()
+        )
+        create_schemas = (
+            (
+                await connection.execute(
+                    text(queries["schema_create_privileges"]), {"schemas": list(schemas)}
+                )
+            )
+            .mappings()
+            .all()
+        )
+        memberships = (
+            (await connection.execute(text(queries["privileged_role_memberships"])))
+            .mappings()
+            .all()
+        )
+        read_only = str(
+            (await connection.execute(text(queries["default_transaction_read_only"]))).scalar_one()
+        )
+        return assess_connection_safety(
+            is_superuser=bool(role["rolsuper"]),
+            can_create_database=bool(role["rolcreatedb"]),
+            can_create_role=bool(role["rolcreaterole"]),
+            write_tables=[f"{row['schema']}.{row['table_name']}" for row in write_tables],
+            create_schemas=[str(row["schema"]) for row in create_schemas],
+            privileged_roles=[str(row["role_name"]) for row in memberships],
+            default_transaction_read_only=read_only.lower() == "on",
+        )
+
+
+def assess_connection_safety(
+    *,
+    is_superuser: bool,
+    can_create_database: bool,
+    can_create_role: bool,
+    write_tables: Sequence[str],
+    create_schemas: Sequence[str],
+    privileged_roles: Sequence[str],
+    default_transaction_read_only: bool,
+) -> ConnectionSafetyReport:
+    """Build a deterministic safety report from PostgreSQL catalog facts."""
+    reasons: list[str] = []
+    if is_superuser:
+        reasons.append("role is a superuser")
+    if can_create_database:
+        reasons.append("role can create databases")
+    if can_create_role:
+        reasons.append("role can create roles")
+    reasons.extend(f"role has write privilege on table {table}" for table in sorted(write_tables))
+    reasons.extend(f"role can CREATE in schema {schema}" for schema in sorted(create_schemas))
+    reasons.extend(
+        f"role is a member of privileged role {role}" for role in sorted(privileged_roles)
+    )
+    return ConnectionSafetyReport(
+        reasons=tuple(reasons),
+        default_transaction_read_only=default_transaction_read_only,
+    )

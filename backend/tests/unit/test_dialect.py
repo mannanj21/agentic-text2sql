@@ -1,6 +1,6 @@
 import pytest
 
-from app.database.dialect import Dialect, PostgresDialect
+from app.database.dialect import Dialect, PostgresDialect, assess_connection_safety
 
 
 def test_postgres_dialect_conforms_to_the_dialect_contract() -> None:
@@ -16,7 +16,7 @@ def test_postgres_introspection_queries_cover_required_catalog_data() -> None:
     assert "PRIMARY KEY" in queries["primary_keys"]
     assert "FOREIGN KEY" in queries["foreign_keys"]
     assert "pg_indexes" in queries["indexes"]
-    assert all("%(schemas)s" in query for query in queries.values())
+    assert all(":schemas" in query for query in queries.values())
 
 
 def test_postgres_read_only_session_settings_are_parameterized() -> None:
@@ -59,3 +59,39 @@ def test_postgres_explain_and_safety_queries() -> None:
     assert "has_schema_privilege" in safety["schema_create_privileges"]
     assert "pg_auth_members" in safety["privileged_role_memberships"]
     assert safety["default_transaction_read_only"] == "SHOW default_transaction_read_only"
+
+
+def test_connection_safety_report_passes_for_a_read_only_role() -> None:
+    report = assess_connection_safety(
+        is_superuser=False,
+        can_create_database=False,
+        can_create_role=False,
+        write_tables=[],
+        create_schemas=[],
+        privileged_roles=[],
+        default_transaction_read_only=True,
+    )
+    assert report.is_safe
+    assert report.reasons == ()
+    assert report.default_transaction_read_only is True
+
+
+def test_connection_safety_report_lists_each_unsafe_privilege() -> None:
+    report = assess_connection_safety(
+        is_superuser=True,
+        can_create_database=True,
+        can_create_role=True,
+        write_tables=["public.orders"],
+        create_schemas=["public"],
+        privileged_roles=["admin_group"],
+        default_transaction_read_only=False,
+    )
+    assert not report.is_safe
+    assert report.reasons == (
+        "role is a superuser",
+        "role can create databases",
+        "role can create roles",
+        "role has write privilege on table public.orders",
+        "role can CREATE in schema public",
+        "role is a member of privileged role admin_group",
+    )
