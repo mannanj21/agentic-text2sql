@@ -1,11 +1,11 @@
 # PROGRESS
 
 ## Current
-- Stage: 3 (LLM Layer, Tracing, Execution Module, Minimal Graph) | Step: S3.3 | Status: TODO
+- Stage: 3 (LLM Layer, Tracing, Execution Module, Minimal Graph) | Step: S3.4 | Status: TODO
 - Branch: stage/3-llm-tracing-minimal-graph
-- Last commit: f1ce11c (S3.2 complete)
+- Last commit: c1245e7 (S3.3 implementation in progress)
 - Active model: Codex (GPT-5)
-- Next action: Finish S3.3 integration tests for truncation, timeout, database errors, and read-only enforcement; then run `python scripts/make.py test-all`.
+- Next action: Implement validator v0 in `app/guardrails/sql_validator.py` and connect it to the opaque `ValidatedSQL` type.
 
 ## Step Checklist
 | Step | Status | Commit | Notes |
@@ -30,7 +30,7 @@
 | S2.7 | DONE | 47509df | Authenticated schema metadata editing and glossary CRUD with re-sync persistence coverage |
 | S3.1 | DONE | db00f91 | Gemini/Ollama structured client, safe cache, retries, usage/cost tracking, FakeLLM, and opt-in real smoke test; Quick + Full passed |
 | S3.2 | DONE | pending | Persisted run lifecycle, node steps, SQL attempts, usage aggregation, errors, and cancellation; Full passed |
-| S3.3 | IN PROGRESS | pending | Executor/type boundary and SQLSTATE classification implemented; focused unit tests pass; integration coverage remains |
+| S3.3 | DONE | pending | Read-only target executor with pinned connections, truncation, SQLSTATE error classification, and real-Postgres coverage; Full passed |
 | S3.4 | TODO | — | Validator v0 |
 | S3.5 | TODO | — | Prompts, generate/answer nodes |
 | S3.6 | TODO | — | Minimal LangGraph + endpoint |
