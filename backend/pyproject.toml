@@ -1,0 +1,140 @@
+[project]
+name = "agentic-text2sql"
+version = "0.1.0"
+description = "Agentic Text-to-SQL Analytics Platform"
+requires-python = ">=3.12"
+license = {text = "MIT"}
+authors = [{name = "Mannan Jain", email = "mannanjain2005@gmail.com"}]
+
+dependencies = [
+    "fastapi>=0.115.0,<1.0",
+    "uvicorn[standard]>=0.32.0,<1.0",
+    "pydantic>=2.10.0,<3.0",
+    "pydantic-settings>=2.7.0,<3.0",
+    "sqlalchemy[asyncio]>=2.0.36,<3.0",
+    "alembic>=1.14.0,<2.0",
+    "psycopg[binary,pool]>=3.2.0,<4.0",
+    "sqlglot>=26.0.0,<27.0",
+    "langgraph>=0.4.0,<1.0",
+    "langchain-core>=0.3.0,<1.0",
+    "langgraph-checkpoint-postgres>=2.0.0,<3.0",
+    "argon2-cffi>=23.1.0,<24.0",
+    "cryptography>=44.0.0,<45.0",
+    "httpx>=0.28.0,<1.0",
+    "pgvector>=0.3.0,<1.0",
+    "sse-starlette>=2.2.0,<3.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.0,<9.0",
+    "pytest-asyncio>=0.25.0,<1.0",
+    "pytest-cov>=6.0.0,<7.0",
+    "ruff>=0.8.0,<1.0",
+    "mypy>=1.13.0,<2.0",
+    "import-linter>=2.1,<3.0",
+    "respx>=0.22.0,<1.0",
+    "hypothesis>=6.120.0,<7.0",
+    "pre-commit>=4.0.0,<5.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+# ── Ruff ──────────────────────────────────────────────────────────
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+src = ["app", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "N",    # pep8-naming
+    "UP",   # pyupgrade
+    "B",    # flake8-bugbear
+    "SIM",  # flake8-simplify
+    "T20",  # flake8-print
+    "RUF",  # ruff-specific
+    "S",    # flake8-bandit (security)
+]
+ignore = [
+    "S101",  # assert used in tests
+    "S104",  # binding to 0.0.0.0
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "S106", "T20"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+
+# ── MyPy ──────────────────────────────────────────────────────────
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+
+[[tool.mypy.overrides]]
+module = ["app.guardrails.*", "app.tools.*"]
+disallow_untyped_defs = true
+strict = true
+
+[[tool.mypy.overrides]]
+module = ["tests.*"]
+disallow_untyped_defs = false
+
+# ── Pytest ────────────────────────────────────────────────────────
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+markers = [
+    "llm: tests requiring a real LLM API call (excluded by default)",
+    "slow: tests that are slow to run",
+    "integration: tests requiring a real database",
+    "security: security corpus tests",
+    "authz: authorization matrix tests",
+]
+addopts = "-m 'not llm and not slow' --strict-markers -ra"
+
+# ── Coverage ──────────────────────────────────────────────────────
+[tool.coverage.run]
+source = ["app"]
+omit = ["tests/*", "*/migrations/*"]
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 80
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "if __name__ ==",
+]
+
+# ── Import Linter ─────────────────────────────────────────────────
+[tool.importlinter]
+root_packages = ["app"]
+
+[[tool.importlinter.contracts]]
+name = "Only execution and introspection connect to target DBs"
+type = "forbidden"
+source_modules = [
+    "app.agent",
+    "app.api",
+    "app.guardrails",
+    "app.retrieval",
+    "app.persistence",
+    "app.llm",
+]
+forbidden_modules = [
+    "app.tools.execution",
+    "app.tools.introspection",
+]
