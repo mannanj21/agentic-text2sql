@@ -1,11 +1,11 @@
 # PROGRESS
 
 ## Current
-- Stage: 2 (Connections, Security Primitives, Introspection) | Step: S2.7 | Status: IN PROGRESS
+- Stage: 2 (Connections, Security Primitives, Introspection) | Step: S2.7 | Status: COMPLETE
 - Branch: stage/2-connections-introspection
-- Last commit: 987b19c (S2.6 introspection)
+- Last commit: pending (S2.7 schema and glossary endpoints)
 - Active model: Codex (GPT-5)
-- Next action: Implement authenticated schema and glossary endpoints in `app/api/schema.py`
+- Next action: Run Stage 2 exit gates, then open and merge the stage PR.
 
 ## Step Checklist
 | Step | Status | Commit | Notes |
