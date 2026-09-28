@@ -1,11 +1,11 @@
 # PROGRESS
 
 ## Current
-- Stage: 3 (LLM Layer, Tracing, Execution Module, Minimal Graph) | Step: S3.2 | Status: TODO
+- Stage: 3 (LLM Layer, Tracing, Execution Module, Minimal Graph) | Step: S3.3 | Status: TODO
 - Branch: stage/3-llm-tracing-minimal-graph
 - Last commit: db00f91 (S3.1 complete)
 - Active model: Codex (GPT-5)
-- Next action: Implement `app/persistence/tracing.py` and its persistence tests; H4 remains needed only for the opt-in Gemini smoke test.
+- Next action: Implement the read-only target execution module and its integration tests.
 
 ## Step Checklist
 | Step | Status | Commit | Notes |
@@ -29,7 +29,7 @@
 | S2.6 | DONE | 987b19c | Target metadata sync with schema filtering, indexes, PKs/FKs, row estimates, conservative sensitive defaults, and failure status |
 | S2.7 | DONE | 47509df | Authenticated schema metadata editing and glossary CRUD with re-sync persistence coverage |
 | S3.1 | DONE | db00f91 | Gemini/Ollama structured client, safe cache, retries, usage/cost tracking, FakeLLM, and opt-in real smoke test; Quick + Full passed |
-| S3.2 | TODO | — | Tracing |
+| S3.2 | DONE | pending | Persisted run lifecycle, node steps, SQL attempts, usage aggregation, errors, and cancellation; Full passed |
 | S3.3 | TODO | — | Execution module |
 | S3.4 | TODO | — | Validator v0 |
 | S3.5 | TODO | — | Prompts, generate/answer nodes |
