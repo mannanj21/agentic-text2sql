@@ -1,11 +1,11 @@
 # PROGRESS
 
 ## Current
-- Stage: 3 (LLM Layer, Tracing, Execution Module, Minimal Graph) | Step: S3.1 | Status: IN PROGRESS
+- Stage: 3 (LLM Layer, Tracing, Execution Module, Minimal Graph) | Step: S3.2 | Status: TODO
 - Branch: stage/3-llm-tracing-minimal-graph
 - Last commit: cb108ea (Stage 2 merged)
 - Active model: Codex (GPT-5)
-- Next action: Implement the provider-agnostic LLM client wrapper; H4 requires a Gemini API key for the real-provider smoke test.
+- Next action: Implement `app/persistence/tracing.py` and its persistence tests; H4 remains needed only for the opt-in Gemini smoke test.
 
 ## Step Checklist
 | Step | Status | Commit | Notes |
@@ -28,7 +28,7 @@
 | S2.5 | DONE | 5eafe83 | Authenticated connection CRUD with SSRF, pinned target connect, encryption, safety reports, and ownership coverage |
 | S2.6 | DONE | 987b19c | Target metadata sync with schema filtering, indexes, PKs/FKs, row estimates, conservative sensitive defaults, and failure status |
 | S2.7 | DONE | 47509df | Authenticated schema metadata editing and glossary CRUD with re-sync persistence coverage |
-| S3.1 | TODO | — | LLM client wrapper |
+| S3.1 | DONE | pending | Gemini/Ollama structured client, safe cache, retries, usage/cost tracking, FakeLLM, and opt-in real smoke test; Quick + Full passed |
 | S3.2 | TODO | — | Tracing |
 | S3.3 | TODO | — | Execution module |
 | S3.4 | TODO | — | Validator v0 |
@@ -74,6 +74,7 @@
 | S9.7 | TODO | — | Resume bullets |
 
 ## Decisions Log
+- 2026-09-29 The LLM wrapper calls documented Gemini and Ollama HTTP APIs through the existing `httpx` dependency, avoiding an additional provider SDK surface; Gemini 2.5 Flash/Pro defaults remain because Google documents free-tier access and structured JSON support.
 - 2026-09-29 Pagila is vendored from the pinned `pagila-v3.1.0` release, rather than the moving default branch, because current upstream requires PostgreSQL 18+ while the local demo uses PostgreSQL 16.
 - 2026-09-28 Native Windows with PowerShell instead of WSL2 because human prefers direct Windows development. PowerShell make.py equivalent provided. All scripts use cross-platform Python.
 - 2026-09-28 `docs/SPEC.md` exists but is empty; proceeding with implementation plan detail which embeds enough spec info. Will populate SPEC.md if human provides content.
