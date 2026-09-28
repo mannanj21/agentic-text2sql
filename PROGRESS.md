@@ -1,11 +1,11 @@
 # PROGRESS
 
 ## Current
-- Stage: 1 (Backend Foundation, Auth, Seed Databases) | Step: S1.5 | Status: TODO
+- Stage: 1 (Backend Foundation, Auth, Seed Databases) | Step: S1.5 | Status: DONE
 - Branch: stage/1-foundation-auth
-- Last commit: to-be-committed (Stage 1.4)
-- Active model: Gemini 3.1 Pro
-- Next action: S1.5 Seed databases and roles
+- Last commit: to-be-committed (S1.5)
+- Active model: Codex (GPT-5)
+- Next action: Stage 1 exit: open PR, run CI, merge, and tag `stage-1-complete`
 
 ## Step Checklist
 | Step | Status | Commit | Notes |
@@ -20,7 +20,7 @@
 | S1.2 | DONE | — | App DB layer and Alembic |
 | S1.3 | DONE | — | Auth: register/login/logout |
 | S1.4 | DONE | — | Ownership pattern and authz harness |
-| S1.5 | TODO | — | Seed databases |
+| S1.5 | DONE | to-be-committed | Ecommerce and pinned Pagila demo databases, roles, integration coverage |
 | S2.1 | TODO | — | Credential encryption |
 | S2.2 | TODO | — | Dialect interface |
 | S2.3 | TODO | — | SSRF guard |
@@ -74,6 +74,7 @@
 | S9.7 | TODO | — | Resume bullets |
 
 ## Decisions Log
+- 2026-09-29 Pagila is vendored from the pinned `pagila-v3.1.0` release, rather than the moving default branch, because current upstream requires PostgreSQL 18+ while the local demo uses PostgreSQL 16.
 - 2026-09-28 Native Windows with PowerShell instead of WSL2 because human prefers direct Windows development. PowerShell make.py equivalent provided. All scripts use cross-platform Python.
 - 2026-09-28 `docs/SPEC.md` exists but is empty; proceeding with implementation plan detail which embeds enough spec info. Will populate SPEC.md if human provides content.
 - 2026-09-28 Pre-commit hooks configured with gitleaks, ruff, and standard hygiene hooks. Installation deferred until first commit (S0.2).
