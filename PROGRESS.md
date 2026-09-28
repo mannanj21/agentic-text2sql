@@ -1,11 +1,11 @@
 # PROGRESS
 
 ## Current
-- Stage: 1 (Backend Foundation, Auth, Seed Databases) | Step: S1.5 | Status: DONE
+- Stage: 1 (Backend Foundation, Auth, Seed Databases) | Step: Stage 1 exit | Status: BLOCKED
 - Branch: stage/1-foundation-auth
-- Last commit: to-be-committed (S1.5)
+- Last commit: 3c0ee57 (S1.5)
 - Active model: Codex (GPT-5)
-- Next action: Stage 1 exit: open PR, run CI, merge, and tag `stage-1-complete`
+- Next action: Reauthenticate GitHub CLI, then open PR, run CI, merge, and tag `stage-1-complete`
 
 ## Step Checklist
 | Step | Status | Commit | Notes |
@@ -87,12 +87,13 @@
 - Node.js: 24.19.0
 - npm: 11.17.0
 - Ollama: 0.34.4
-- gh: MISSING (needed S0.3)
-- Docker: MISSING (needed S0.6)
+- gh: installed, but the active GitHub token is invalid
+- Docker: installed
 - make: MISSING (using scripts/make.py instead)
 - psql: MISSING (optional)
 
 ## Known Issues / Blockers
+- Current: GitHub CLI token for `mannanj21` is invalid, blocking the Stage 1 PR/CI/merge/tag exit procedure. Reauthenticate with `gh auth login -h github.com`.
 - gh CLI not installed — blocks S0.3 (GitHub remote creation). Will guide human to install when we reach that step.
 - Docker Desktop not installed — blocks S0.6 (Docker Compose). Will guide human to install when we reach that step.
 
