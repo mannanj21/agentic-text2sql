@@ -1,11 +1,11 @@
 # PROGRESS
 
 ## Current
-- Stage: 2 (Connections, Security Primitives, Introspection) | Step: S2.7 | Status: COMPLETE
-- Branch: stage/2-connections-introspection
-- Last commit: 47509df (S2.7 schema and glossary endpoints)
-- Active model: Codex (GPT-5)
-- Next action: Run Stage 2 exit gates, then open and merge the stage PR.
+- Stage: 3 (LLM Layer, Tracing, Execution Module, Minimal Graph) | Step: S3.6 | Status: DONE
+- Branch: stage/3-llm-tracing-minimal-graph
+- Last commit: (pending S3.6)
+- Active model: Gemini 3.1 Pro (High)
+- Next action: PR and merge stage 3, then proceed to Stage 4 (S4.1: Full SQL Validator).
 
 ## Step Checklist
 | Step | Status | Commit | Notes |
@@ -28,12 +28,12 @@
 | S2.5 | DONE | 5eafe83 | Authenticated connection CRUD with SSRF, pinned target connect, encryption, safety reports, and ownership coverage |
 | S2.6 | DONE | 987b19c | Target metadata sync with schema filtering, indexes, PKs/FKs, row estimates, conservative sensitive defaults, and failure status |
 | S2.7 | DONE | 47509df | Authenticated schema metadata editing and glossary CRUD with re-sync persistence coverage |
-| S3.1 | TODO | — | LLM client wrapper |
-| S3.2 | TODO | — | Tracing |
-| S3.3 | TODO | — | Execution module |
-| S3.4 | TODO | — | Validator v0 |
-| S3.5 | TODO | — | Prompts, generate/answer nodes |
-| S3.6 | TODO | — | Minimal LangGraph + endpoint |
+| S3.1 | DONE | db00f91 | Gemini/Ollama structured client, safe cache, retries, usage/cost tracking, FakeLLM, and opt-in real smoke test; Quick + Full passed |
+| S3.2 | DONE | pending | Persisted run lifecycle, node steps, SQL attempts, usage aggregation, errors, and cancellation; Full passed |
+| S3.3 | DONE | pending | Read-only target executor with pinned connections, truncation, SQLSTATE error classification, and real-Postgres coverage; Full passed |
+| S3.4 | DONE | pending | SQLGlot PostgreSQL single-statement SELECT/WITH validator returning opaque ValidatedSQL; Full passed |
+| S3.5 | DONE | pending | Versioned prompts (generate_v1, answer_v1), result summary builder, generate/answer nodes, injection-isolation tests; Quick passed |
+| S3.6 | DONE | pending | Minimal LangGraph pipeline (generate→validate→execute→answer), Conversations API with RunRecorder tracing, AgentState as TypedDict; Full and Stack passed |
 | S4.1 | TODO | — | Full SQL validator |
 | S4.2 | TODO | — | Security corpus |
 | S4.3 | TODO | — | No-unvalidated-execution enforcement |
@@ -74,6 +74,7 @@
 | S9.7 | TODO | — | Resume bullets |
 
 ## Decisions Log
+- 2026-09-29 The LLM wrapper calls documented Gemini and Ollama HTTP APIs through the existing `httpx` dependency, avoiding an additional provider SDK surface; Gemini 2.5 Flash/Pro defaults remain because Google documents free-tier access and structured JSON support.
 - 2026-09-29 Pagila is vendored from the pinned `pagila-v3.1.0` release, rather than the moving default branch, because current upstream requires PostgreSQL 18+ while the local demo uses PostgreSQL 16.
 - 2026-09-28 Native Windows with PowerShell instead of WSL2 because human prefers direct Windows development. PowerShell make.py equivalent provided. All scripts use cross-platform Python.
 - 2026-09-28 `docs/SPEC.md` exists but is empty; proceeding with implementation plan detail which embeds enough spec info. Will populate SPEC.md if human provides content.
