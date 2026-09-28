@@ -1,11 +1,11 @@
 # PROGRESS
 
 ## Current
-- Stage: 3 (LLM Layer, Tracing, Execution Module, Minimal Graph) | Step: S3.4 | Status: TODO
+- Stage: 3 (LLM Layer, Tracing, Execution Module, Minimal Graph) | Step: S3.5 | Status: TODO
 - Branch: stage/3-llm-tracing-minimal-graph
-- Last commit: c1245e7 (S3.3 implementation in progress)
+- Last commit: 0588fbb (S3.3 complete)
 - Active model: Codex (GPT-5)
-- Next action: Implement validator v0 in `app/guardrails/sql_validator.py` and connect it to the opaque `ValidatedSQL` type.
+- Next action: Implement versioned prompts plus generate/answer nodes and result-summary tests.
 
 ## Step Checklist
 | Step | Status | Commit | Notes |
@@ -31,7 +31,7 @@
 | S3.1 | DONE | db00f91 | Gemini/Ollama structured client, safe cache, retries, usage/cost tracking, FakeLLM, and opt-in real smoke test; Quick + Full passed |
 | S3.2 | DONE | pending | Persisted run lifecycle, node steps, SQL attempts, usage aggregation, errors, and cancellation; Full passed |
 | S3.3 | DONE | pending | Read-only target executor with pinned connections, truncation, SQLSTATE error classification, and real-Postgres coverage; Full passed |
-| S3.4 | TODO | — | Validator v0 |
+| S3.4 | DONE | pending | SQLGlot PostgreSQL single-statement SELECT/WITH validator returning opaque ValidatedSQL; Full passed |
 | S3.5 | TODO | — | Prompts, generate/answer nodes |
 | S3.6 | TODO | — | Minimal LangGraph + endpoint |
 | S4.1 | TODO | — | Full SQL validator |
