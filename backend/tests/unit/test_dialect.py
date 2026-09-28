@@ -14,7 +14,7 @@ def test_postgres_introspection_queries_cover_required_catalog_data() -> None:
     assert "pg_class" in queries["tables"]
     assert "information_schema.columns" in queries["columns"]
     assert "PRIMARY KEY" in queries["primary_keys"]
-    assert "FOREIGN KEY" in queries["foreign_keys"]
+    assert "pg_constraint" in queries["foreign_keys"]
     assert "pg_indexes" in queries["indexes"]
     assert all(":schemas" in query for query in queries.values())
 

@@ -87,19 +87,30 @@ class PostgresDialect:
                 ORDER BY tc.table_schema, tc.table_name, kcu.ordinal_position
             """,
             "foreign_keys": """
-                SELECT tc.table_schema AS from_schema, tc.table_name AS from_table,
-                       kcu.column_name AS from_column,
-                       ccu.table_schema AS to_schema, ccu.table_name AS to_table,
-                       ccu.column_name AS to_column
-                FROM information_schema.table_constraints AS tc
-                JOIN information_schema.key_column_usage AS kcu
-                  ON tc.constraint_name = kcu.constraint_name
-                 AND tc.table_schema = kcu.table_schema
-                JOIN information_schema.constraint_column_usage AS ccu
-                  ON ccu.constraint_name = tc.constraint_name
-                 AND ccu.table_schema = tc.table_schema
-                WHERE tc.constraint_type = 'FOREIGN KEY'
-                  AND tc.table_schema = ANY(:schemas)
+                SELECT source_schema.nspname AS from_schema,
+                       source_table.relname AS from_table,
+                       source_column.attname AS from_column,
+                       target_schema.nspname AS to_schema,
+                       target_table.relname AS to_table,
+                       target_column.attname AS to_column
+                FROM pg_constraint AS foreign_key
+                JOIN pg_class AS source_table ON source_table.oid = foreign_key.conrelid
+                JOIN pg_namespace AS source_schema ON source_schema.oid = source_table.relnamespace
+                JOIN pg_class AS target_table ON target_table.oid = foreign_key.confrelid
+                JOIN pg_namespace AS target_schema ON target_schema.oid = target_table.relnamespace
+                JOIN LATERAL unnest(foreign_key.conkey) WITH ORDINALITY
+                  AS source_key(attnum, position) ON TRUE
+                JOIN LATERAL unnest(foreign_key.confkey) WITH ORDINALITY
+                  AS target_key(attnum, position) ON target_key.position = source_key.position
+                JOIN pg_attribute AS source_column
+                  ON source_column.attrelid = source_table.oid
+                 AND source_column.attnum = source_key.attnum
+                JOIN pg_attribute AS target_column
+                  ON target_column.attrelid = target_table.oid
+                 AND target_column.attnum = target_key.attnum
+                WHERE foreign_key.contype = 'f'
+                  AND source_schema.nspname = ANY(:schemas)
+                ORDER BY source_schema.nspname, source_table.relname, source_key.position
             """,
             "indexes": """
                 SELECT schemaname AS schema, tablename AS table_name, indexname,

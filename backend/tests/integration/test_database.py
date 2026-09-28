@@ -51,6 +51,7 @@ async def test_tables_and_indexes_exist() -> None:
             "connections",
             "schema_tables",
             "schema_columns",
+            "schema_indexes",
             "schema_relationships",
             "glossary_terms",
             "conversations",

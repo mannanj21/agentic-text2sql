@@ -1,11 +1,11 @@
 # PROGRESS
 
 ## Current
-- Stage: 2 (Connections, Security Primitives, Introspection) | Step: S2.6 | Status: IN PROGRESS
+- Stage: 2 (Connections, Security Primitives, Introspection) | Step: S2.7 | Status: IN PROGRESS
 - Branch: stage/2-connections-introspection
-- Last commit: 5eafe83 (S2.5 connections API)
+- Last commit: pending (S2.6 introspection)
 - Active model: Codex (GPT-5)
-- Next action: Implement target schema introspection and metadata synchronization in `app/tools/introspection.py`
+- Next action: Implement authenticated schema and glossary endpoints in `app/api/schema.py`
 
 ## Step Checklist
 | Step | Status | Commit | Notes |
@@ -26,7 +26,7 @@
 | S2.3 | DONE | 6f74dba | Validates all DNS answers and pins target connections to validated IPs via libpq hostaddr |
 | S2.4 | DONE | 8ed225d | Structured role safety report; real PostgreSQL checks reject writer and superuser roles |
 | S2.5 | DONE | 5eafe83 | Authenticated connection CRUD with SSRF, pinned target connect, encryption, safety reports, and ownership coverage |
-| S2.6 | TODO | — | Introspection |
+| S2.6 | DONE | pending | Target metadata sync with schema filtering, indexes, PKs/FKs, row estimates, conservative sensitive defaults, and failure status |
 | S2.7 | TODO | — | Schema and glossary endpoints |
 | S3.1 | TODO | — | LLM client wrapper |
 | S3.2 | TODO | — | Tracing |

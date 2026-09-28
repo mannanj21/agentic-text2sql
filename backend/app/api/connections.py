@@ -13,7 +13,12 @@ from app.database.core import get_db
 from app.database.crypto import CredentialCipher
 from app.database.models import Connection, User
 from app.guardrails.ssrf import UnsafeTargetError, resolve_target
-from app.tools.introspection import TargetConnectionError, test_target_connection
+from app.tools.introspection import (
+    SchemaIntrospectionError,
+    TargetConnectionError,
+    sync_schema_metadata,
+    test_target_connection,
+)
 
 router = APIRouter(prefix="/connections", tags=["Connections"])
 CurrentUser = Annotated[User, Depends(current_user)]
@@ -115,6 +120,7 @@ async def create_connection(
         database=request.database,
         username=request.username,
         encrypted_password=encrypted_password,
+        allowed_schemas=request.schemas,
         status="pending",
     )
     db.add(connection)
@@ -144,25 +150,10 @@ async def delete_connection(connection_id: str, user: CurrentUser, db: DbSession
 async def sync_connection(
     connection_id: str, user: CurrentUser, db: DbSession
 ) -> ConnectionResponse:
-    """Recheck credentials and safety; schema synchronization follows in S2.6."""
+    """Synchronize the stored target schema after the ownership check."""
     connection = await _owned_connection(connection_id, user.id, db)
-    settings = get_settings()
     try:
-        target = resolve_target(
-            connection.host,
-            connection.port,
-            allow_private_hosts=settings.ALLOW_PRIVATE_HOSTS,
-        )
-        report = await test_target_connection(
-            target=target,
-            database=connection.database,
-            username=connection.username,
-            encrypted_password=connection.encrypted_password,
-            encryption_key=settings.ENCRYPTION_KEY.get_secret_value(),
-            schemas=["public"],
-        )
-    except (UnsafeTargetError, TargetConnectionError) as exc:
+        await sync_schema_metadata(connection, db)
+    except SchemaIntrospectionError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
-    if not report.is_safe:
-        raise _safety_refusal(report.reasons)
     return ConnectionResponse.from_model(connection)
