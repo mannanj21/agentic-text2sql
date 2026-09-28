@@ -1,0 +1,99 @@
+# PROGRESS
+
+## Current
+- Stage: 1 (Backend Foundation, Auth, Seed Databases) | Step: S1.1 | Status: TODO
+- Branch: stage/1-foundation-auth
+- Last commit: 9442cc5 (Stage 0 complete)
+- Active model: Gemini 3.1 Pro
+- Next action: S1.1 FastAPI app, config, structured logging
+
+## Step Checklist
+| Step | Status | Commit | Notes |
+|---|---|---|---|
+| S0.1 | DONE | — | Env audit done; gh, Docker installed later |
+| S0.2 | DONE | 516e75f | git init, .gitignore, .gitattributes, .env.example, LICENSE, README created |
+| S0.3 | DONE | — | gh CLI installed, GitHub remote created |
+| S0.4 | DONE | 131f79b | Scaffold, pyproject.toml, Makefile, AGENTS.md, PROGRESS.md created |
+| S0.5 | DONE | 9442cc5 | CI configured and passed |
+| S0.6 | DONE | f5af33f | Docker Compose for app-db created, smoke test passed |
+| S1.1 | TODO | — | FastAPI app, config, logging |
+| S1.2 | TODO | — | App DB layer and Alembic |
+| S1.3 | TODO | — | Auth: register/login/logout |
+| S1.4 | TODO | — | Ownership pattern and authz harness |
+| S1.5 | TODO | — | Seed databases |
+| S2.1 | TODO | — | Credential encryption |
+| S2.2 | TODO | — | Dialect interface |
+| S2.3 | TODO | — | SSRF guard |
+| S2.4 | TODO | — | Connection safety check |
+| S2.5 | TODO | — | Connections API |
+| S2.6 | TODO | — | Introspection |
+| S2.7 | TODO | — | Schema and glossary endpoints |
+| S3.1 | TODO | — | LLM client wrapper |
+| S3.2 | TODO | — | Tracing |
+| S3.3 | TODO | — | Execution module |
+| S3.4 | TODO | — | Validator v0 |
+| S3.5 | TODO | — | Prompts, generate/answer nodes |
+| S3.6 | TODO | — | Minimal LangGraph + endpoint |
+| S4.1 | TODO | — | Full SQL validator |
+| S4.2 | TODO | — | Security corpus |
+| S4.3 | TODO | — | No-unvalidated-execution enforcement |
+| S4.4 | TODO | — | Guardrail node |
+| S4.5 | TODO | — | Repair loop |
+| S4.6 | TODO | — | SSE streaming |
+| S5.1 | TODO | — | Dataset format and validator |
+| S5.2 | TODO | — | Write the dataset |
+| S5.3 | TODO | — | Result-set comparison |
+| S5.4 | TODO | — | Metrics and runner CLI |
+| S5.5 | TODO | — | Baseline eval |
+| S6.1 | TODO | — | Embeddings |
+| S6.2 | TODO | — | Metadata enrichment |
+| S6.3 | TODO | — | Schema retrieval |
+| S6.4 | TODO | — | Contextualize + route |
+| S6.5 | TODO | — | Deterministic verification |
+| S6.6 | TODO | — | Chart selection |
+| S6.7 | TODO | — | Planner |
+| S6.8 | TODO | — | Ablations |
+| S7.1 | TODO | — | Frontend scaffold |
+| S7.2 | TODO | — | Connections UI |
+| S7.3 | TODO | — | Chat with streaming |
+| S7.4 | TODO | — | Trace view and history |
+| S7.5 | TODO | — | Schema/glossary editor |
+| S7.6 | TODO | — | E2E tests |
+| S8.1 | TODO | — | Rate limiting |
+| S8.2 | TODO | — | Authorization matrix |
+| S8.3 | TODO | — | Prompt-injection tests |
+| S8.4 | TODO | — | nginx and 2 replicas |
+| S8.5 | TODO | — | Load test |
+| S8.6 | TODO | — | Complete CI |
+| S9.1 | TODO | — | README |
+| S9.2 | TODO | — | design.md |
+| S9.3 | TODO | — | security.md |
+| S9.4 | TODO | — | DoD audit |
+| S9.5 | TODO | — | Final eval |
+| S9.6 | TODO | — | Clean-clone verification |
+| S9.7 | TODO | — | Resume bullets |
+
+## Decisions Log
+- 2026-09-28 Native Windows with PowerShell instead of WSL2 because human prefers direct Windows development. PowerShell make.py equivalent provided. All scripts use cross-platform Python.
+- 2026-09-28 `docs/SPEC.md` exists but is empty; proceeding with implementation plan detail which embeds enough spec info. Will populate SPEC.md if human provides content.
+- 2026-09-28 Pre-commit hooks configured with gitleaks, ruff, and standard hygiene hooks. Installation deferred until first commit (S0.2).
+
+## Environment
+- OS: Windows 11 (NT 10.0.26200.0), PowerShell 5.1
+- Git: 2.55.0.windows.4
+- Python: 3.14.7
+- uv: 0.12.19
+- Node.js: 24.19.0
+- npm: 11.17.0
+- Ollama: 0.34.4
+- gh: MISSING (needed S0.3)
+- Docker: MISSING (needed S0.6)
+- make: MISSING (using scripts/make.py instead)
+- psql: MISSING (optional)
+
+## Known Issues / Blockers
+- gh CLI not installed — blocks S0.3 (GitHub remote creation). Will guide human to install when we reach that step.
+- Docker Desktop not installed — blocks S0.6 (Docker Compose). Will guide human to install when we reach that step.
+
+## Measured Numbers
+(none yet)

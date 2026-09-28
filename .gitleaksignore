@@ -1,0 +1,2 @@
+# Ignore example env file which contains safe placeholders
+.env.example
