@@ -1,11 +1,11 @@
 # PROGRESS
 
 ## Current
-- Stage: 2 (Connections, Security Primitives, Introspection) | Step: S2.3 | Status: IN PROGRESS
+- Stage: 2 (Connections, Security Primitives, Introspection) | Step: S2.4 | Status: IN PROGRESS
 - Branch: stage/2-connections-introspection
-- Last commit: fbd541e (S2.2 Postgres dialect interface)
+- Last commit: 6f74dba (S2.3 SSRF guard)
 - Active model: Codex (GPT-5)
-- Next action: Implement SSRF hostname and IP validation in `backend/app/guardrails/ssrf.py`
+- Next action: Implement the PostgreSQL connection safety check using the dialect safety queries
 
 ## Step Checklist
 | Step | Status | Commit | Notes |
@@ -23,7 +23,7 @@
 | S1.5 | DONE | 3c0ee57 | Ecommerce and pinned Pagila demo databases, roles, integration coverage |
 | S2.1 | DONE | 56c6eab | Fernet credential cipher with versioned key prefix, startup validation, and DB ciphertext coverage |
 | S2.2 | DONE | fbd541e | PostgreSQL dialect contract for introspection, read-only session settings, EXPLAIN, and safety checks |
-| S2.3 | TODO | — | SSRF guard |
+| S2.3 | DONE | 6f74dba | Validates all DNS answers and pins target connections to validated IPs via libpq hostaddr |
 | S2.4 | TODO | — | Connection safety check |
 | S2.5 | TODO | — | Connections API |
 | S2.6 | TODO | — | Introspection |
