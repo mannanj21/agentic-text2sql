@@ -26,33 +26,40 @@ async def test_alembic_migrations() -> None:
     # Downgrade to base
     process = subprocess.run(
         [sys.executable, "-m", "alembic", "downgrade", "base"],
-        cwd=os.path.join(os.path.dirname(__file__), "../../")
+        cwd=os.path.join(os.path.dirname(__file__), "../../"),
     )
     assert process.returncode == 0
 
     # Upgrade to head
     process = subprocess.run(
         [sys.executable, "-m", "alembic", "upgrade", "head"],
-        cwd=os.path.join(os.path.dirname(__file__), "../../")
+        cwd=os.path.join(os.path.dirname(__file__), "../../"),
     )
     assert process.returncode == 0
 
 
 async def test_tables_and_indexes_exist() -> None:
     """Verify that all required tables and specific indexes exist."""
-    db_url = settings.DATABASE_URL.get_secret_value() if hasattr(settings.DATABASE_URL, "get_secret_value") else settings.DATABASE_URL
+    db_url = settings.DATABASE_URL.get_secret_value()
     engine = create_async_engine(db_url)
     async with engine.connect() as conn:
         # Check tables
         tables = [
-            "users", "connections", "schema_tables", "schema_columns",
-            "schema_relationships", "glossary_terms", "conversations",
-            "messages", "runs", "run_steps", "run_attempts", "rate_limits"
+            "users",
+            "connections",
+            "schema_tables",
+            "schema_columns",
+            "schema_relationships",
+            "glossary_terms",
+            "conversations",
+            "messages",
+            "runs",
+            "run_steps",
+            "run_attempts",
+            "rate_limits",
         ]
         for table in tables:
-            result = await conn.execute(
-                text("SELECT to_regclass(:table)"), {"table": table}
-            )
+            result = await conn.execute(text("SELECT to_regclass(:table)"), {"table": table})
             assert result.scalar() == table
 
         # Check vector extension
@@ -66,7 +73,7 @@ async def test_tables_and_indexes_exist() -> None:
 async def test_cascade_delete() -> None:
     """Test that deleting a user cascades to connections, conversations, and runs."""
     async with AsyncSessionLocal() as session:
-        from app.database.models import User, Connection, Conversation, Run
+        from app.database.models import Connection, Conversation, Run, User
 
         user = User(email="test@example.com", password_hash="hash")
         session.add(user)
@@ -74,8 +81,13 @@ async def test_cascade_delete() -> None:
         await session.refresh(user)
 
         conn = Connection(
-            user_id=user.id, name="Test", host="localhost", port=5432,
-            database="db", username="u", encrypted_password="p"
+            user_id=user.id,
+            name="Test",
+            host="localhost",
+            port=5432,
+            database="db",
+            username="u",
+            encrypted_password="p",
         )
         conv = Conversation(user_id=user.id, connection_id=conn.id)
         session.add(conn)
@@ -86,9 +98,7 @@ async def test_cascade_delete() -> None:
         await session.commit()
         await session.refresh(conv)
 
-        run = Run(
-            conversation_id=conv.id, user_id=user.id, question="Q"
-        )
+        run = Run(conversation_id=conv.id, user_id=user.id, question="Q")
         session.add(run)
         await session.commit()
 

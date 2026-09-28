@@ -1,7 +1,7 @@
 from collections.abc import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-from sqlalchemy.orm import declarative_base
+from sqlalchemy.orm import DeclarativeBase
 
 from app.config import get_settings
 
@@ -9,7 +9,7 @@ settings = get_settings()
 
 # Create the async engine
 engine = create_async_engine(
-    settings.DATABASE_URL.get_secret_value() if hasattr(settings.DATABASE_URL, "get_secret_value") else settings.DATABASE_URL,
+    settings.DATABASE_URL.get_secret_value(),
     echo=False,
     future=True,
     pool_pre_ping=True,
@@ -25,8 +25,11 @@ AsyncSessionLocal = async_sessionmaker(
     autoflush=False,
 )
 
-# Declarative base for SQLAlchemy models
-Base = declarative_base()
+
+class Base(DeclarativeBase):
+    """SQLAlchemy declarative base."""
+
+    pass
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:

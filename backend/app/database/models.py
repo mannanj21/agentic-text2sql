@@ -4,7 +4,6 @@ from typing import Any
 
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
-    JSON,
     Boolean,
     DateTime,
     Float,
@@ -41,7 +40,9 @@ class User(Base):
     conversations: Mapped[list["Conversation"]] = relationship(
         "Conversation", back_populates="user", cascade="all, delete-orphan"
     )
-    runs: Mapped[list["Run"]] = relationship("Run", back_populates="user", cascade="all, delete-orphan")
+    runs: Mapped[list["Run"]] = relationship(
+        "Run", back_populates="user", cascade="all, delete-orphan"
+    )
 
 
 class Connection(Base):
@@ -59,7 +60,9 @@ class Connection(Base):
     encrypted_password: Mapped[str] = mapped_column(String, nullable=False)
     sample_values_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     status: Mapped[str] = mapped_column(String, nullable=False, default="pending")
-    last_synced_at: Mapped[datetime.datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_synced_at: Mapped[datetime.datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
     user: Mapped["User"] = relationship("User", back_populates="connections")
     tables: Mapped[list["SchemaTable"]] = relationship(
@@ -219,7 +222,10 @@ class Run(Base):
         "RunStep", back_populates="run", cascade="all, delete-orphan", order_by="RunStep.seq"
     )
     attempts: Mapped[list["RunAttempt"]] = relationship(
-        "RunAttempt", back_populates="run", cascade="all, delete-orphan", order_by="RunAttempt.attempt_no"
+        "RunAttempt",
+        back_populates="run",
+        cascade="all, delete-orphan",
+        order_by="RunAttempt.attempt_no",
     )
 
 
@@ -268,5 +274,7 @@ class RateLimit(Base):
     user_id: Mapped[str] = mapped_column(
         String, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
     )
-    window_start: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), primary_key=True)
+    window_start: Mapped[datetime.datetime] = mapped_column(
+        DateTime(timezone=True), primary_key=True
+    )
     count: Mapped[int] = mapped_column(Integer, nullable=False, default=1)

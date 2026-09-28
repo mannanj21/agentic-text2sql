@@ -4,6 +4,7 @@ from collections.abc import Awaitable, Callable
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
 
+from app.api.auth import router as auth_router
 from app.config import get_settings
 from app.logging import request_id_ctx, setup_logging
 
@@ -36,6 +37,8 @@ def create_app() -> FastAPI:
         return response
 
     # Routes
+    app.include_router(auth_router)
+
     @app.get("/health", tags=["System"])
     async def health_check() -> JSONResponse:
         """Basic health check endpoint.
