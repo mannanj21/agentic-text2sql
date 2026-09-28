@@ -55,9 +55,9 @@ async def test_accepts_select_statements(
         ("", "empty"),
         ("   ", "empty"),
         ("SELECT 1; SELECT 2", "multi_statement"),
-        ("INSERT INTO customers (first_name) VALUES ('A')", "statement_type"),
-        ("UPDATE customers SET first_name = 'A'", "statement_type"),
-        ("DELETE FROM customers", "statement_type"),
+        ("INSERT INTO customers (first_name) VALUES ('A')", "unauthorized_node"),
+        ("UPDATE customers SET first_name = 'A'", "unauthorized_node"),
+        ("DELETE FROM customers", "unauthorized_node"),
         ("SELECT FROM", "syntax"),
     ],
 )

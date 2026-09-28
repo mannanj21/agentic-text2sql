@@ -2,10 +2,10 @@
 
 ## Current
 - Stage: 4 (Safety, Repair, SSE) | Step: S4.2 | Status: IN PROGRESS
-- Branch: stage/3-llm-tracing-minimal-graph
-- Last commit: 3528570 (S4.1)
-- Active model: Gemini 3.1 Pro (High)
-- Next action: Complete the security corpus tests and generated security report for S4.2.
+- Branch: stage/4-safety-repair-sse
+- Last commit: pending S4.2 checkpoint
+- Active model: Codex (GPT-5)
+- Next action: Finish S4.2 with fuzz-lite coverage and the complete database-boundary matrix.
 
 ## Step Checklist
 | Step | Status | Commit | Notes |
@@ -35,7 +35,7 @@
 | S3.5 | DONE | pending | Versioned prompts (generate_v1, answer_v1), result summary builder, generate/answer nodes, injection-isolation tests; Quick passed |
 | S3.6 | DONE | pending | Minimal LangGraph pipeline (generate→validate→execute→answer), Conversations API with RunRecorder tracing, AgentState as TypedDict; Full and Stack passed |
 | S4.1 | DONE | pending | Full async SQL validator: structural/function/schema/sensitive-column checks and read-only EXPLAIN validation; Full passed |
-| S4.2 | IN PROGRESS | — | Security corpus |
+| S4.2 | IN PROGRESS | pending | 38-case validator corpus, representative DB-boundary proof, and generated security report; fuzz-lite/full DB matrix remain |
 | S4.3 | TODO | — | No-unvalidated-execution enforcement |
 | S4.4 | TODO | — | Guardrail node |
 | S4.5 | TODO | — | Repair loop |

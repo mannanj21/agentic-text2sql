@@ -25,6 +25,11 @@
   expected: "blocked"
   kind: "unauthorized_node"
 
+- id: for_share
+  sql: "SELECT * FROM users FOR SHARE;"
+  expected: "blocked"
+  kind: "unauthorized_node"
+
 - id: copy_command
   sql: "COPY users TO '/etc/passwd';"
   expected: "blocked"
@@ -45,6 +50,11 @@
   expected: "blocked"
   kind: "forbidden_function"
 
+- id: pg_read_binary_file
+  sql: "SELECT pg_read_binary_file('/etc/passwd');"
+  expected: "blocked"
+  kind: "forbidden_function"
+
 - id: pg_ls_dir
   sql: "SELECT pg_ls_dir('/');"
   expected: "blocked"
@@ -62,6 +72,26 @@
 
 - id: set_config
   sql: "SELECT set_config('log_statement', 'all', false);"
+  expected: "blocked"
+  kind: "forbidden_function"
+
+- id: current_setting
+  sql: "SELECT current_setting('server_version');"
+  expected: "blocked"
+  kind: "forbidden_function"
+
+- id: pg_terminate_backend
+  sql: "SELECT pg_terminate_backend(1);"
+  expected: "blocked"
+  kind: "forbidden_function"
+
+- id: pg_advisory_lock
+  sql: "SELECT pg_advisory_lock(1);"
+  expected: "blocked"
+  kind: "forbidden_function"
+
+- id: query_to_xml
+  sql: "SELECT query_to_xml('SELECT 1', true, false, '');"
   expected: "blocked"
   kind: "forbidden_function"
 
@@ -112,6 +142,26 @@
 
 - id: sensitive_column_star
   sql: "SELECT * FROM public.customers;"
+  expected: "blocked"
+  kind: "sensitive_column"
+
+- id: sensitive_column_aliased
+  sql: "SELECT c.email FROM public.customers AS c;"
+  expected: "blocked"
+  kind: "sensitive_column"
+
+- id: sensitive_column_subquery
+  sql: "SELECT email FROM (SELECT email FROM public.customers) AS c;"
+  expected: "blocked"
+  kind: "sensitive_column"
+
+- id: sensitive_column_where
+  sql: "SELECT id FROM public.customers WHERE email = 'a@example.test';"
+  expected: "blocked"
+  kind: "sensitive_column"
+
+- id: sensitive_column_order_by
+  sql: "SELECT id FROM public.customers ORDER BY email;"
   expected: "blocked"
   kind: "sensitive_column"
 
