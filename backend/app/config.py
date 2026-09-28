@@ -1,6 +1,6 @@
 from typing import Literal
 
-from pydantic import SecretStr
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -60,6 +60,11 @@ class Settings(BaseSettings):
     # --- Evaluation ---
     EVAL_AS_OF_DATE: str | None = None
     LLM_CACHE_MODE: Literal["off", "record", "replay"] = "off"
+
+    # --- Embeddings ---
+    EMBEDDING_DIM: int = Field(
+        default=1024, description="Dimension of the pgvector embeddings (e.g., 1024 for BGE-M3)"
+    )
 
 
 def get_settings() -> Settings:
