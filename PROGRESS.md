@@ -1,11 +1,11 @@
 # PROGRESS
 
 ## Current
-- Stage: 1 (Backend Foundation, Auth, Seed Databases) | Step: S1.4 | Status: TODO
+- Stage: 1 (Backend Foundation, Auth, Seed Databases) | Step: S1.5 | Status: TODO
 - Branch: stage/1-foundation-auth
-- Last commit: to-be-committed (Stage 1.3)
+- Last commit: to-be-committed (Stage 1.4)
 - Active model: Gemini 3.1 Pro
-- Next action: S1.4 Ownership pattern and authz harness
+- Next action: S1.5 Seed databases and roles
 
 ## Step Checklist
 | Step | Status | Commit | Notes |
@@ -19,7 +19,7 @@
 | S1.1 | DONE | 2e18632 | FastAPI app, config, logging |
 | S1.2 | DONE | — | App DB layer and Alembic |
 | S1.3 | DONE | — | Auth: register/login/logout |
-| S1.4 | TODO | — | Ownership pattern and authz harness |
+| S1.4 | DONE | — | Ownership pattern and authz harness |
 | S1.5 | TODO | — | Seed databases |
 | S2.1 | TODO | — | Credential encryption |
 | S2.2 | TODO | — | Dialect interface |
