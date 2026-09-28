@@ -7,6 +7,7 @@ from fastapi.responses import JSONResponse
 
 from app.api.auth import router as auth_router
 from app.api.connections import router as connections_router
+from app.api.conversations import router as conversations_router
 from app.api.schema import router as schema_router
 from app.config import get_settings
 from app.logging import request_id_ctx, setup_logging
@@ -50,6 +51,7 @@ def create_app() -> FastAPI:
     app.include_router(auth_router)
     app.include_router(connections_router)
     app.include_router(schema_router)
+    app.include_router(conversations_router)
 
     @app.get("/health", tags=["System"])
     async def health_check() -> JSONResponse:
