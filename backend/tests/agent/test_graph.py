@@ -145,7 +145,7 @@ async def test_validation_failure_does_not_reach_execute(
     )
     db_mock = _fake_db()
     graph = build_graph(fake, _fake_connection(), db_mock)
-    final = await graph.ainvoke(_base_state())
+    final = await graph.ainvoke(_base_state(repair_budget_remaining=0))
 
     assert final["status"] == "failed"
     assert mock_execute.call_count == 0, "execute must not be called when validation fails"
@@ -166,7 +166,7 @@ async def test_execute_error_yields_controlled_failure(
     fake = _good_fake()
     db_mock = _fake_db()
     graph = build_graph(fake, _fake_connection(), db_mock)
-    final = await graph.ainvoke(_base_state())
+    final = await graph.ainvoke(_base_state(repair_budget_remaining=0))
 
     assert final["status"] == "failed"
     assert "timeout" in final.get("error_kind", "")

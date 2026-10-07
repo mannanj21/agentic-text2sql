@@ -1,8 +1,13 @@
 """LangGraph agent: guardrail → generate → validate → execute → answer.
 
-Stage 4 additions: input guardrail node (S4.4).
-Repair loop and SSE streaming come in S4.5 and S4.6.
-Failure at any node returns a controlled error state.
+Stage 4 additions:
+  S4.4: input guardrail node
+  S4.5: repair loop with shared budget
+  S4.6: SSE streaming (see api/conversations.py)
+
+Failure at any node returns a controlled error state.  Validation or
+execution failures are routed to the repair node, which decrements the
+shared budget and retries from validate.
 """
 
 from __future__ import annotations
@@ -16,11 +21,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.agent.nodes import (
     AnswerOutput,
     GenerateOutput,
+    RepairOutput,
     ResultSummary,
     build_result_summary,
     run_answer_node,
     run_generate_node,
+    run_repair_node,
 )
+from app.config import get_settings
 from app.database.models import Connection
 from app.guardrails.input_guard import GuardrailError, check_input
 from app.guardrails.sql_validator import ValidationError, rewrap_validated, validate_sql
@@ -70,6 +78,11 @@ class AgentState(TypedDict, total=False):
     error: str
     error_kind: str
 
+    # --- Repair loop (S4.5) ---
+    repair_budget_remaining: int
+    repair_history: list[str]        # previous SQL strings tried (for duplicate detection)
+    repair_attempts_summary: list[str]  # human-readable attempt summaries for error messages
+
     # --- Bookkeeping ---
     total_tokens: int
     total_cost: float
@@ -96,7 +109,16 @@ async def guardrail_node(state: dict[str, Any]) -> dict[str, Any]:
             "error": str(exc),
             "error_kind": exc.kind,
         }
-    return {}
+    # Initialise repair budget on first entry
+    settings = get_settings()
+    budget = state.get("repair_budget_remaining")
+    if budget is None:
+        budget = settings.MAX_REPAIR_ATTEMPTS
+    return {
+        "repair_budget_remaining": budget,
+        "repair_history": state.get("repair_history", []),
+        "repair_attempts_summary": state.get("repair_attempts_summary", []),
+    }
 
 
 async def generate_node(state: dict[str, Any], *, llm: FakeLLM | LLMClient) -> dict[str, Any]:
@@ -130,7 +152,7 @@ async def generate_node(state: dict[str, Any], *, llm: FakeLLM | LLMClient) -> d
 async def validate_node(
     state: dict[str, Any], *, connection: Connection, db: AsyncSession
 ) -> dict[str, Any]:
-    """Validate the generated SQL; sets validated_sql or fails."""
+    """Validate the generated SQL; sets validated_sql or flags for repair."""
     sql = state.get("generated_sql", "")
     if not sql:
         return {
@@ -175,6 +197,108 @@ async def execute_node(state: dict[str, Any], *, connection: Connection) -> dict
         "execution_truncated": result.truncated,
         "result_stats": summary.stats,
         "result_preview": summary.rows_preview,
+    }
+
+
+async def repair_node(state: dict[str, Any], *, llm: FakeLLM | LLMClient) -> dict[str, Any]:
+    """Attempt to repair a failed SQL statement (S4.5).
+
+    Consumes one unit from *repair_budget_remaining*.  If budget is exhausted
+    or the LLM returns a duplicate SQL (already tried), the run is terminated
+    with a controlled failure message listing all previous attempts.
+
+    On success, updates *generated_sql* and resets *validated_sql* so the
+    graph re-enters the validate→execute path.
+    """
+    budget: int = state.get("repair_budget_remaining", 0)
+    history: list[str] = list(state.get("repair_history", []))
+    attempts_summary: list[str] = list(state.get("repair_attempts_summary", []))
+
+    last_sql = state.get("generated_sql", "")
+    if last_sql and last_sql not in history:
+        history.append(last_sql)
+
+    failure_type = state.get("error_kind", "unknown")
+    error_message = state.get("error", "Unknown error")
+
+    attempt_label = (
+        f"Attempt {len(history)}: [{failure_type}] {error_message[:120]}"
+    )
+    attempts_summary.append(attempt_label)
+
+    if budget <= 0:
+        return {
+            "status": "failed",
+            "error": (
+                "Repair budget exhausted. All attempts failed:\n"
+                + "\n".join(attempts_summary)
+            ),
+            "error_kind": "repair_budget_exhausted",
+            "repair_budget_remaining": 0,
+            "repair_history": history,
+            "repair_attempts_summary": attempts_summary,
+        }
+
+    # Consume budget
+    budget -= 1
+
+    # Call the LLM for a repair
+    try:
+        result: RepairOutput
+        usage: TokenUsage
+        result, usage = await run_repair_node(
+            llm=llm,
+            question=state["question"],
+            schema_ddl=state.get("schema_ddl", ""),
+            dialect=state.get("dialect", "postgresql"),
+            current_date=state.get("current_date") or datetime.date.today().isoformat(),
+            glossary=state.get("glossary") or None,
+            previous_sqls=history,
+            failure_type=failure_type,
+            error_message=error_message,
+        )
+    except LLMProviderError as exc:
+        return {
+            "status": "failed",
+            "error": f"LLM repair failed: {exc}",
+            "error_kind": "llm_error",
+            "repair_budget_remaining": budget,
+            "repair_history": history,
+            "repair_attempts_summary": attempts_summary,
+        }
+
+    new_sql = result.sql.strip()
+
+    # Detect duplicate SQL — short-circuit even if budget remains
+    if not new_sql or new_sql in history:
+        return {
+            "status": "failed",
+            "error": (
+                "Repair produced a duplicate or empty SQL.  Stopping to avoid a loop.\n"
+                "Attempts so far:\n" + "\n".join(attempts_summary)
+            ),
+            "error_kind": "repair_duplicate_sql",
+            "repair_budget_remaining": budget,
+            "repair_history": history,
+            "repair_attempts_summary": attempts_summary,
+        }
+
+    return {
+        # Feed the new SQL back into the validate→execute cycle
+        "generated_sql": new_sql,
+        "validated_sql": "",           # must be re-validated
+        "tables_used": result.tables_used,
+        "generate_assumptions": result.assumptions,
+        # Reset the failure state so routing can re-enter validate
+        "status": "running",
+        "error": "",
+        "error_kind": "",
+        # Budget and history updated
+        "repair_budget_remaining": budget,
+        "repair_history": history,
+        "repair_attempts_summary": attempts_summary,
+        "total_tokens": state.get("total_tokens", 0) + usage.total_tokens,
+        "total_cost": state.get("total_cost", 0.0) + usage.cost_usd,
     }
 
 
@@ -225,16 +349,42 @@ def _route_after_generate(state: dict[str, Any]) -> str:
 
 
 def _route_after_validate(state: dict[str, Any]) -> str:
-    return "execute" if state.get("status") != "failed" else END
+    """Route to execute on success, or to repair if budget remains or we need to exhaust it."""
+    if state.get("status") != "failed":
+        return "execute"
+    budget = state.get("repair_budget_remaining", 0)
+    history = state.get("repair_history", [])
+    # If budget is 0 and history is empty, it's ablation mode -> end immediately.
+    if budget == 0 and not history:
+        return END
+    return "repair"
 
 
 def _route_after_execute(state: dict[str, Any]) -> str:
-    return "answer" if state.get("status") != "failed" else END
+    """Route to answer on success, or to repair if budget remains or we need to exhaust it."""
+    if state.get("status") != "failed":
+        return "answer"
+    budget = state.get("repair_budget_remaining", 0)
+    history = state.get("repair_history", [])
+    if budget == 0 and not history:
+        return END
+    return "repair"
+
+
+def _route_after_repair(state: dict[str, Any]) -> str:
+    """On a successful repair, re-enter validate.  On duplicate/budget-gone, END."""
+    return "validate" if state.get("status") != "failed" else END
 
 
 # ---------------------------------------------------------------------------
 # Graph builder
 # ---------------------------------------------------------------------------
+
+#: Backstop to prevent infinite loops.  LangGraph raises RecursionError if
+#: the graph takes more steps than this.  It is intentionally larger than
+#: MAX_REPAIR_ATTEMPTS * (validate + execute + repair) to avoid premature
+#: termination for legitimate long paths, while still bounding runaway loops.
+_RECURSION_LIMIT = 50
 
 
 def build_graph(
@@ -245,6 +395,9 @@ def build_graph(
     """Build and compile the agent graph.
 
     Pipeline: guardrail → generate → validate → execute → answer
+                                          ↑             |
+                                          └── repair ───┘
+              (repair consumes budget and retries validate)
 
     Returns the compiled LangGraph object.  The caller is responsible for
     supplying a checkpointer when invoking.
@@ -262,6 +415,9 @@ def build_graph(
     async def _execute(state: dict[str, Any]) -> dict[str, Any]:
         return await execute_node(state, connection=connection)
 
+    async def _repair(state: dict[str, Any]) -> dict[str, Any]:
+        return await repair_node(state, llm=llm)
+
     async def _answer(state: dict[str, Any]) -> dict[str, Any]:
         return await answer_node(state, llm=llm)
 
@@ -270,6 +426,7 @@ def build_graph(
     builder.add_node("generate", _generate)
     builder.add_node("validate", _validate)
     builder.add_node("execute", _execute)
+    builder.add_node("repair", _repair)
     builder.add_node("answer", _answer)
 
     builder.set_entry_point("guardrail")
@@ -280,9 +437,20 @@ def build_graph(
         "generate", _route_after_generate, {"validate": "validate", END: END}
     )
     builder.add_conditional_edges(
-        "validate", _route_after_validate, {"execute": "execute", END: END}
+        "validate",
+        _route_after_validate,
+        {"execute": "execute", "repair": "repair", END: END},
     )
-    builder.add_conditional_edges("execute", _route_after_execute, {"answer": "answer", END: END})
+    builder.add_conditional_edges(
+        "execute",
+        _route_after_execute,
+        {"answer": "answer", "repair": "repair", END: END},
+    )
+    builder.add_conditional_edges(
+        "repair",
+        _route_after_repair,
+        {"validate": "validate", END: END},
+    )
     builder.add_edge("answer", END)
 
     return builder.compile()

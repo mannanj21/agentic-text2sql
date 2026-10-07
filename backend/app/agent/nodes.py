@@ -159,6 +159,12 @@ class AnswerOutput(BaseModel):
     assumptions: list[str]
 
 
+class RepairOutput(BaseModel):
+    sql: str
+    tables_used: list[str]
+    assumptions: list[str]
+
+
 # ---------------------------------------------------------------------------
 # Shared LLM type alias (duck-typed: both LLMClient and FakeLLM work)
 # ---------------------------------------------------------------------------
@@ -238,3 +244,49 @@ async def run_answer_node(
     )
     messages = [{"role": "user", "content": prompt}]
     return await llm.complete_structured("fast", messages, AnswerOutput, node="answer")
+
+
+# ---------------------------------------------------------------------------
+# Repair node
+# ---------------------------------------------------------------------------
+
+_REPAIR_PROMPT_NAME = "repair_v1.txt"
+
+
+async def run_repair_node(
+    *,
+    llm: AnyLLM,
+    question: str,
+    schema_ddl: str,
+    dialect: str = "postgresql",
+    current_date: str | None = None,
+    glossary: str | None = None,
+    previous_sqls: list[str],
+    failure_type: str,
+    error_message: str,
+) -> tuple[RepairOutput, TokenUsage]:
+    """Call the LLM to produce a repaired SQL statement.
+
+    Returns (RepairOutput, TokenUsage).  Raises LLMProviderError on failure.
+    """
+    if current_date is None:
+        current_date = datetime.date.today().isoformat()
+
+    previous_sqls_block = "\n".join(
+        f"{i + 1}. {sql}" for i, sql in enumerate(previous_sqls)
+    ) or "(none yet)"
+
+    template = load_prompt(_REPAIR_PROMPT_NAME)
+    prompt = _render(
+        template,
+        dialect=dialect,
+        current_date=current_date,
+        schema_ddl=schema_ddl,
+        glossary=glossary or "",
+        question=question,
+        previous_sqls=previous_sqls_block,
+        failure_type=failure_type,
+        error_message=error_message,
+    )
+    messages = [{"role": "user", "content": prompt}]
+    return await llm.complete_structured("strong", messages, RepairOutput, node="repair")
