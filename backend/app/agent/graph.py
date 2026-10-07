@@ -21,7 +21,7 @@ from app.agent.nodes import (
     run_generate_node,
 )
 from app.database.models import Connection
-from app.guardrails.sql_validator import ValidationError, validate_sql
+from app.guardrails.sql_validator import ValidationError, rewrap_validated, validate_sql
 from app.llm.client import FakeLLM, LLMClient, LLMProviderError, TokenUsage
 from app.tools.execution import ExecutionError, ExecutionResult, execute
 
@@ -130,8 +130,6 @@ async def validate_node(
 
 async def execute_node(state: dict[str, Any], *, connection: Connection) -> dict[str, Any]:
     """Execute the validated SQL against the target database."""
-    from app.guardrails.types import _validated_sql  # internal bridge
-
     sql_str = state.get("validated_sql", "")
     if not sql_str:
         return {
@@ -139,8 +137,8 @@ async def execute_node(state: dict[str, Any], *, connection: Connection) -> dict
             "error": "No validated SQL to execute.",
             "error_kind": "missing_sql",
         }
-    # Re-wrap through the internal bridge (safe: we already validated above)
-    validated = _validated_sql(sql_str)
+    # Re-wrap through the guardrails re-wrap helper (safe: already validated above)
+    validated = rewrap_validated(sql_str)
     try:
         result: ExecutionResult = await execute(connection, validated)
     except ExecutionError as exc:

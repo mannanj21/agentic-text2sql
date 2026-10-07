@@ -267,3 +267,14 @@ async def validate_sql(sql: str, connection: Connection, db: AsyncSession) -> Va
         raise ValidationError(exc.kind, f"Database EXPLAIN check failed: {exc}") from exc
 
     return _validated_sql(normalized_sql)
+
+
+def rewrap_validated(sql: str) -> ValidatedSQL:
+    """Re-wrap a SQL string that was previously validated and stored in state.
+
+    This is the only permitted path for graph.py (or other internal callers)
+    to produce a ValidatedSQL from a string that has already passed validation.
+    Calling this on unvalidated SQL is a logic error — the executor will still
+    refuse a plain str, but it will accept ValidatedSQL produced here.
+    """
+    return _validated_sql(sql)
