@@ -40,7 +40,7 @@
 | S4.4 | DONE | 0f1632b | Deterministic pre-LLM guardrail node |
 | S4.5 | DONE | cbf2fa0 | Shared-budget LLM repair loop with duplicate avoidance and recursion limit |
 | S4.6 | DONE | pending | SSE streaming endpoint: node_started/finished/sql_generated/attempt_failed/final events; background task decoupled from response; non-streaming JSON fallback; disconnect persistence; RunStep tracing |
-| S5.1 | TODO | — | Dataset format and validator |
+| S5.1 | DONE | pending | Dataset format, Pydantic loader, deterministic split assignment, uniqueness/followup checks, CLI validator |
 | S5.2 | TODO | — | Write the dataset |
 | S5.3 | TODO | — | Result-set comparison |
 | S5.4 | TODO | — | Metrics and runner CLI |
