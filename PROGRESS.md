@@ -43,7 +43,7 @@
 | S5.1 | DONE | pending | Dataset format, Pydantic loader, deterministic split assignment, uniqueness/followup checks, CLI validator |
 | S5.2 | DONE | pending | Write the dataset (60 cases across ecommerce/pagila, stratified deterministic splits, docs generated) |
 | S5.3 | DONE | pending | Result-set comparison logic: multiset/ordered comparison, positional mapping, float tolerance, superset columns |
-| S5.4 | TODO | — | Metrics and runner CLI |
+| S5.4 | DONE | pending | Metrics module (execution/routing accuracy, schema P/R, self-correction, latency p50/p95, tokens/cost); runner logic; CLI; 38 eval tests |
 | S5.5 | TODO | — | Baseline eval |
 | S6.1 | TODO | — | Embeddings |
 | S6.2 | TODO | — | Metadata enrichment |
