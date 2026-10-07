@@ -13,7 +13,6 @@ Four sub-tests:
 from __future__ import annotations
 
 import ast
-import textwrap
 from pathlib import Path
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock
@@ -159,9 +158,7 @@ async def test_agent_malicious_sql_never_reaches_executor(
     malicious_sql = "DROP TABLE public.customers"
     fake = FakeLLM(
         {
-            "generate": [
-                GenerateOutput(sql=malicious_sql, tables_used=[], assumptions=[])
-            ],
+            "generate": [GenerateOutput(sql=malicious_sql, tables_used=[], assumptions=[])],
             "answer": [],
         }
     )

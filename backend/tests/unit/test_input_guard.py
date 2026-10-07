@@ -59,9 +59,7 @@ _BLOCKED: list[tuple[str, str, str]] = [
 
 
 @pytest.mark.parametrize("question,expected_kind,desc", _BLOCKED, ids=[d for _, _, d in _BLOCKED])
-def test_blocked_inputs_raise_guardrail_error(
-    question: str, expected_kind: str, desc: str
-) -> None:
+def test_blocked_inputs_raise_guardrail_error(question: str, expected_kind: str, desc: str) -> None:
     with pytest.raises(GuardrailError) as exc_info:
         check_input(question)
     assert exc_info.value.kind == expected_kind, (

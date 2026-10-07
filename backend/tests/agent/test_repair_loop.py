@@ -189,7 +189,9 @@ async def test_repair_budget_exhaustion(monkeypatch: pytest.MonkeyPatch) -> None
                 RepairOutput(sql="SELECT 2", tables_used=[], assumptions=[]),
                 RepairOutput(sql="SELECT 3", tables_used=[], assumptions=[]),
                 RepairOutput(sql="SELECT 4", tables_used=[], assumptions=[]),
-                RepairOutput(sql="SELECT 5", tables_used=[], assumptions=[]),  # Should not be reached
+                RepairOutput(
+                    sql="SELECT 5", tables_used=[], assumptions=[]
+                ),  # Should not be reached
             ],
             "answer": [],
         }

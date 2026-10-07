@@ -80,7 +80,7 @@ class AgentState(TypedDict, total=False):
 
     # --- Repair loop (S4.5) ---
     repair_budget_remaining: int
-    repair_history: list[str]        # previous SQL strings tried (for duplicate detection)
+    repair_history: list[str]  # previous SQL strings tried (for duplicate detection)
     repair_attempts_summary: list[str]  # human-readable attempt summaries for error messages
 
     # --- Bookkeeping ---
@@ -221,17 +221,14 @@ async def repair_node(state: dict[str, Any], *, llm: FakeLLM | LLMClient) -> dic
     failure_type = state.get("error_kind", "unknown")
     error_message = state.get("error", "Unknown error")
 
-    attempt_label = (
-        f"Attempt {len(history)}: [{failure_type}] {error_message[:120]}"
-    )
+    attempt_label = f"Attempt {len(history)}: [{failure_type}] {error_message[:120]}"
     attempts_summary.append(attempt_label)
 
     if budget <= 0:
         return {
             "status": "failed",
             "error": (
-                "Repair budget exhausted. All attempts failed:\n"
-                + "\n".join(attempts_summary)
+                "Repair budget exhausted. All attempts failed:\n" + "\n".join(attempts_summary)
             ),
             "error_kind": "repair_budget_exhausted",
             "repair_budget_remaining": 0,
@@ -286,7 +283,7 @@ async def repair_node(state: dict[str, Any], *, llm: FakeLLM | LLMClient) -> dic
     return {
         # Feed the new SQL back into the validate→execute cycle
         "generated_sql": new_sql,
-        "validated_sql": "",           # must be re-validated
+        "validated_sql": "",  # must be re-validated
         "tables_used": result.tables_used,
         "generate_assumptions": result.assumptions,
         # Reset the failure state so routing can re-enter validate

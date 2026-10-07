@@ -33,9 +33,15 @@ _CONTROL_CHAR_RE = re.compile(
 # Patterns that strongly suggest prompt-injection attempts.  We normalise
 # to lower-case before matching.
 _INJECTION_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
-    ("ignore_instructions", re.compile(r"\bignore\s+(previous|above|all)\s+(instructions?|rules?|prompts?)", re.I)),
+    (
+        "ignore_instructions",
+        re.compile(r"\bignore\s+(previous|above|all)\s+(instructions?|rules?|prompts?)", re.I),
+    ),
     ("jailbreak_bypass", re.compile(r"\bdisregard\s+(all\s+)?(previous|prior|above)\b", re.I)),
-    ("role_override", re.compile(r"\byou\s+are\s+now\s+(a\s+)?(different|new|unrestricted|free)\b", re.I)),
+    (
+        "role_override",
+        re.compile(r"\byou\s+are\s+now\s+(a\s+)?(different|new|unrestricted|free)\b", re.I),
+    ),
     ("system_prompt_leak", re.compile(r"\brepeat\s+(your|the)\s+(system\s+)?prompt\b", re.I)),
     ("privilege_escalation", re.compile(r"\bact\s+as\s+(admin|root|superuser|dba)\b", re.I)),
 ]

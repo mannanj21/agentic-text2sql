@@ -61,6 +61,8 @@ class Connection(Base):
     allowed_schemas: Mapped[list[str]] = mapped_column(
         JSONB, nullable=False, default=lambda: ["public"]
     )
+    embedding_model: Mapped[str | None] = mapped_column(String, nullable=True)
+    embedding_dim: Mapped[int | None] = mapped_column(Integer, nullable=True)
     sample_values_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     status: Mapped[str] = mapped_column(String, nullable=False, default="pending")
     last_synced_at: Mapped[datetime.datetime | None] = mapped_column(

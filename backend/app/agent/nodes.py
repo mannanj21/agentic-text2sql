@@ -272,9 +272,9 @@ async def run_repair_node(
     if current_date is None:
         current_date = datetime.date.today().isoformat()
 
-    previous_sqls_block = "\n".join(
-        f"{i + 1}. {sql}" for i, sql in enumerate(previous_sqls)
-    ) or "(none yet)"
+    previous_sqls_block = (
+        "\n".join(f"{i + 1}. {sql}" for i, sql in enumerate(previous_sqls)) or "(none yet)"
+    )
 
     template = load_prompt(_REPAIR_PROMPT_NAME)
     prompt = _render(

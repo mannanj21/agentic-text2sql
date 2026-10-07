@@ -213,16 +213,18 @@ async def rename_conversation(
 # ---------------------------------------------------------------------------
 
 
-from sse_starlette.sse import EventSourceResponse
-from fastapi import BackgroundTasks
 import asyncio
 import json
+
+from sse_starlette.sse import EventSourceResponse
+
 from app.database.core import AsyncSessionLocal
-from app.database.models import Connection
+
 
 async def _put_event(queue: asyncio.Queue | None, event_type: str, **data: Any) -> None:
     if queue is not None:
         await queue.put({"type": event_type, **data})
+
 
 async def background_run_graph(
     initial_state: dict[str, Any],
@@ -234,9 +236,7 @@ async def background_run_graph(
     # Use a new DB session for the background task
     async with AsyncSessionLocal() as db:
         # Re-fetch connection
-        connection = await db.scalar(
-            select(Connection).where(Connection.id == connection_id)
-        )
+        connection = await db.scalar(select(Connection).where(Connection.id == connection_id))
         if not connection:
             await _put_event(queue, "error", error="Connection not found")
             if queue:
@@ -254,13 +254,20 @@ async def background_run_graph(
                 question=initial_state["question"],
             ) as recorder:
                 graph = build_graph(llm, connection, db)
-                
+
                 active_steps = {}
                 async for event in graph.astream_events(initial_state, version="v2"):
                     kind = event["event"]
                     name = event["name"]
 
-                    if name not in {"guardrail", "generate", "validate", "execute", "repair", "answer"}:
+                    if name not in {
+                        "guardrail",
+                        "generate",
+                        "validate",
+                        "execute",
+                        "repair",
+                        "answer",
+                    }:
                         continue
 
                     if kind == "on_chain_start":
@@ -269,21 +276,32 @@ async def background_run_graph(
                     elif kind == "on_chain_end":
                         await _put_event(queue, "node_finished", node=name)
                         step = active_steps.pop(name, None)
-                        
+
                         state_update = event["data"].get("output", {})
                         if isinstance(state_update, dict):
                             final_state.update(state_update)
 
                             if name in ("generate", "repair") and state_update.get("generated_sql"):
-                                await _put_event(queue, "sql_generated", sql=state_update["generated_sql"])
-                            
+                                await _put_event(
+                                    queue, "sql_generated", sql=state_update["generated_sql"]
+                                )
+
                             if state_update.get("status") == "failed":
                                 if step:
-                                    await recorder.end_step(step, Exception(state_update.get("error", "Unknown error")))
-                                if name == "repair" and state_update.get("error_kind") != "repair_budget_exhausted":
-                                    await _put_event(queue, "attempt_failed", error=state_update.get("error"))
+                                    await recorder.end_step(
+                                        step, Exception(state_update.get("error", "Unknown error"))
+                                    )
+                                if (
+                                    name == "repair"
+                                    and state_update.get("error_kind") != "repair_budget_exhausted"
+                                ):
+                                    await _put_event(
+                                        queue, "attempt_failed", error=state_update.get("error")
+                                    )
                                 else:
-                                    await _put_event(queue, "error", error=state_update.get("error"))
+                                    await _put_event(
+                                        queue, "error", error=state_update.get("error")
+                                    )
                             else:
                                 if step:
                                     await recorder.end_step(step)
@@ -415,8 +433,10 @@ async def query_conversation(
     else:
         # Non-streaming JSON fallback
         queue = asyncio.Queue()
-        await background_run_graph(initial_state, conversation_id, user.id, conv.connection_id, queue)
-        
+        await background_run_graph(
+            initial_state, conversation_id, user.id, conv.connection_id, queue
+        )
+
         final_event = None
         while not queue.empty():
             event = await queue.get()
