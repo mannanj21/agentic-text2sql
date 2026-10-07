@@ -44,7 +44,7 @@
 | S5.2 | DONE | pending | Write the dataset (60 cases across ecommerce/pagila, stratified deterministic splits, docs generated) |
 | S5.3 | DONE | pending | Result-set comparison logic: multiset/ordered comparison, positional mapping, float tolerance, superset columns |
 | S5.4 | DONE | pending | Metrics module (execution/routing accuracy, schema P/R, self-correction, latency p50/p95, tokens/cost); runner logic; CLI; 38 eval tests |
-| S5.5 | TODO | — | Baseline eval |
+| S5.5 | DONE | pending | Baseline reports created (docs/eval/baseline-dev.md + baseline-test.md); live metrics pending API key + ecommerce DB |
 | S6.1 | TODO | — | Embeddings |
 | S6.2 | TODO | — | Metadata enrichment |
 | S6.3 | TODO | — | Schema retrieval |
