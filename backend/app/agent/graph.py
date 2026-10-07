@@ -1,6 +1,7 @@
-"""Minimal LangGraph agent: generate → validate → execute → answer.
+"""LangGraph agent: guardrail → generate → validate → execute → answer.
 
-Stage 3: non-streaming, no repair loop (comes in S4.5).
+Stage 4 additions: input guardrail node (S4.4).
+Repair loop and SSE streaming come in S4.5 and S4.6.
 Failure at any node returns a controlled error state.
 """
 
@@ -21,6 +22,7 @@ from app.agent.nodes import (
     run_generate_node,
 )
 from app.database.models import Connection
+from app.guardrails.input_guard import GuardrailError, check_input
 from app.guardrails.sql_validator import ValidationError, rewrap_validated, validate_sql
 from app.llm.client import FakeLLM, LLMClient, LLMProviderError, TokenUsage
 from app.tools.execution import ExecutionError, ExecutionResult, execute
@@ -76,6 +78,25 @@ class AgentState(TypedDict, total=False):
 # ---------------------------------------------------------------------------
 # Node implementations
 # ---------------------------------------------------------------------------
+
+
+async def guardrail_node(state: dict[str, Any]) -> dict[str, Any]:
+    """Deterministic pre-LLM input check (S4.4).
+
+    Checks: empty input, max length, control characters, suspicious Unicode,
+    and basic injection heuristics.  Rejections are traced and returned as
+    controlled failures so the graph can produce a structured error response.
+    """
+    question = state.get("question", "")
+    try:
+        check_input(question)
+    except GuardrailError as exc:
+        return {
+            "status": "failed",
+            "error": str(exc),
+            "error_kind": exc.kind,
+        }
+    return {}
 
 
 async def generate_node(state: dict[str, Any], *, llm: FakeLLM | LLMClient) -> dict[str, Any]:
@@ -195,6 +216,10 @@ async def answer_node(state: dict[str, Any], *, llm: FakeLLM | LLMClient) -> dic
 # ---------------------------------------------------------------------------
 
 
+def _route_after_guardrail(state: dict[str, Any]) -> str:
+    return "generate" if state.get("status") != "failed" else END
+
+
 def _route_after_generate(state: dict[str, Any]) -> str:
     return "validate" if state.get("status") != "failed" else END
 
@@ -219,9 +244,14 @@ def build_graph(
 ) -> Any:
     """Build and compile the agent graph.
 
+    Pipeline: guardrail → generate → validate → execute → answer
+
     Returns the compiled LangGraph object.  The caller is responsible for
     supplying a checkpointer when invoking.
     """
+
+    async def _guardrail(state: dict[str, Any]) -> dict[str, Any]:
+        return await guardrail_node(state)
 
     async def _generate(state: dict[str, Any]) -> dict[str, Any]:
         return await generate_node(state, llm=llm)
@@ -236,12 +266,16 @@ def build_graph(
         return await answer_node(state, llm=llm)
 
     builder: Any = StateGraph(AgentState)
+    builder.add_node("guardrail", _guardrail)
     builder.add_node("generate", _generate)
     builder.add_node("validate", _validate)
     builder.add_node("execute", _execute)
     builder.add_node("answer", _answer)
 
-    builder.set_entry_point("generate")
+    builder.set_entry_point("guardrail")
+    builder.add_conditional_edges(
+        "guardrail", _route_after_guardrail, {"generate": "generate", END: END}
+    )
     builder.add_conditional_edges(
         "generate", _route_after_generate, {"validate": "validate", END: END}
     )
