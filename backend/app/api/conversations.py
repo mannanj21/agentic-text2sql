@@ -213,115 +213,220 @@ async def rename_conversation(
 # ---------------------------------------------------------------------------
 
 
-@router.post("/conversations/{conversation_id}/query", response_model=QueryResponse)
+from sse_starlette.sse import EventSourceResponse
+from fastapi import BackgroundTasks
+import asyncio
+import json
+from app.database.core import AsyncSessionLocal
+from app.database.models import Connection
+
+async def _put_event(queue: asyncio.Queue | None, event_type: str, **data: Any) -> None:
+    if queue is not None:
+        await queue.put({"type": event_type, **data})
+
+async def background_run_graph(
+    initial_state: dict[str, Any],
+    conversation_id: str,
+    user_id: str,
+    connection_id: str,
+    queue: asyncio.Queue | None,
+) -> None:
+    # Use a new DB session for the background task
+    async with AsyncSessionLocal() as db:
+        # Re-fetch connection
+        connection = await db.scalar(
+            select(Connection).where(Connection.id == connection_id)
+        )
+        if not connection:
+            await _put_event(queue, "error", error="Connection not found")
+            if queue:
+                await queue.put(None)
+            return
+
+        llm = LLMClient(settings)
+        final_state = initial_state.copy()
+
+        try:
+            async with RunRecorder(
+                db,
+                conversation_id=conversation_id,
+                user_id=user_id,
+                question=initial_state["question"],
+            ) as recorder:
+                graph = build_graph(llm, connection, db)
+                
+                active_steps = {}
+                async for event in graph.astream_events(initial_state, version="v2"):
+                    kind = event["event"]
+                    name = event["name"]
+
+                    if name not in {"guardrail", "generate", "validate", "execute", "repair", "answer"}:
+                        continue
+
+                    if kind == "on_chain_start":
+                        await _put_event(queue, "node_started", node=name)
+                        active_steps[name] = await recorder.start_step(name)
+                    elif kind == "on_chain_end":
+                        await _put_event(queue, "node_finished", node=name)
+                        step = active_steps.pop(name, None)
+                        
+                        state_update = event["data"].get("output", {})
+                        if isinstance(state_update, dict):
+                            final_state.update(state_update)
+
+                            if name in ("generate", "repair") and state_update.get("generated_sql"):
+                                await _put_event(queue, "sql_generated", sql=state_update["generated_sql"])
+                            
+                            if state_update.get("status") == "failed":
+                                if step:
+                                    await recorder.end_step(step, Exception(state_update.get("error", "Unknown error")))
+                                if name == "repair" and state_update.get("error_kind") != "repair_budget_exhausted":
+                                    await _put_event(queue, "attempt_failed", error=state_update.get("error"))
+                                else:
+                                    await _put_event(queue, "error", error=state_update.get("error"))
+                            else:
+                                if step:
+                                    await recorder.end_step(step)
+                        else:
+                            if step:
+                                await recorder.end_step(step)
+
+                run = recorder.run
+                assert run is not None
+                run.final_sql = final_state.get("validated_sql") or final_state.get("generated_sql")
+                run.result_meta = {
+                    "answer": final_state.get("answer"),
+                    "assumptions": final_state.get("answer_assumptions", []),
+                }
+                run.result_preview = {
+                    "columns": final_state.get("execution_columns", []),
+                    "row_count": final_state.get("execution_row_count", 0),
+                    "truncated": final_state.get("execution_truncated", False),
+                }
+
+                if final_state.get("status") == "failed":
+                    run.status = "failed"
+                    run.error = final_state.get("error", "Unknown error")
+
+                if final_state.get("answer"):
+                    assistant_msg = Message(
+                        conversation_id=conversation_id,
+                        role="assistant",
+                        content=final_state["answer"],
+                        run_id=recorder.run_id,
+                    )
+                    db.add(assistant_msg)
+
+                await db.commit()
+
+            # Emit final event OUTSIDE the RunRecorder so __aexit__ sets status="completed"
+            run = recorder.run
+            await _put_event(
+                queue,
+                "final",
+                run_id=recorder.run_id,
+                status=run.status,
+                answer=final_state.get("answer"),
+                sql=run.final_sql,
+                columns=final_state.get("execution_columns", []),
+                row_count=final_state.get("execution_row_count", 0),
+                truncated=final_state.get("execution_truncated", False),
+                error=run.error,
+            )
+
+        except BaseException as exc:
+            await _put_event(queue, "error", error=str(exc))
+        finally:
+            await llm.aclose()
+            if queue:
+                await queue.put(None)
+
+
+@router.post("/conversations/{conversation_id}/query")
 async def query_conversation(
     conversation_id: str,
     body: QueryRequest,
     user: CurrentUser,
     db: DbSession,
-) -> QueryResponse:
-    """Run a text-to-SQL query in a conversation (non-streaming for Stage 3)."""
+    stream: bool = True,
+) -> Any:
+    """Run a text-to-SQL query in a conversation."""
     conv = await _owned_conversation(conversation_id, user.id, db)
     connection = await _owned_connection(conv.connection_id, user.id, db)
 
-    # Render schema DDL for the LLM context
     schema_ddl = await render_schema_ddl(connection, db)
 
-    # Build LLM client
-    llm = LLMClient(settings)
-
-    # Persist user message
     user_msg = Message(
         conversation_id=conversation_id,
         role="user",
         content=body.question,
     )
     db.add(user_msg)
-    await db.flush()
-
-    # Run the graph under the RunRecorder
-    async with RunRecorder(
-        db,
-        conversation_id=conversation_id,
-        user_id=user.id,
-        question=body.question,
-    ) as recorder:
-        initial_state: dict[str, Any] = {
-            "question": body.question,
-            "connection_id": conv.connection_id,
-            "conversation_id": conversation_id,
-            "user_id": user.id,
-            "schema_ddl": schema_ddl,
-            "dialect": "postgresql",
-            "current_date": datetime.date.today().isoformat(),
-            "glossary": "",
-            "status": "running",
-            "error": "",
-            "error_kind": "",
-            "generated_sql": "",
-            "tables_used": [],
-            "generate_assumptions": [],
-            "validated_sql": "",
-            "execution_columns": [],
-            "execution_row_count": 0,
-            "execution_truncated": False,
-            "result_stats": "",
-            "result_preview": "",
-            "answer": "",
-            "answer_assumptions": [],
-            "total_tokens": 0,
-            "total_cost": 0.0,
-        }
-
-        # Record individual node steps
-        async with recorder.step("generate"):
-            pass  # Graph handles its own execution; step is used for timing
-
-        graph = build_graph(llm, connection, db)
-        final_state: dict[str, Any] = await graph.ainvoke(initial_state)
-
-        run = recorder.run
-        assert run is not None
-
-        # Persist final SQL and result metadata onto the run row
-        run.final_sql = final_state.get("validated_sql") or final_state.get("generated_sql")
-        run.result_meta = {
-            "answer": final_state.get("answer"),
-            "assumptions": final_state.get("answer_assumptions", []),
-        }
-        run.result_preview = {
-            "columns": final_state.get("execution_columns", []),
-            "row_count": final_state.get("execution_row_count", 0),
-            "truncated": final_state.get("execution_truncated", False),
-        }
-
-        if final_state.get("status") == "failed":
-            run.status = "failed"
-            run.error = final_state.get("error", "Unknown error")
-
-    # Persist assistant message
-    if final_state.get("answer"):
-        assistant_msg = Message(
-            conversation_id=conversation_id,
-            role="assistant",
-            content=final_state["answer"],
-            run_id=recorder.run_id,
-        )
-        db.add(assistant_msg)
-
     await db.commit()
-    await llm.aclose()
 
-    return QueryResponse(
-        run_id=recorder.run_id,
-        status=final_state.get("status", "failed"),
-        answer=final_state.get("answer") or None,
-        sql=run.final_sql,
-        columns=final_state.get("execution_columns", []),
-        row_count=final_state.get("execution_row_count", 0),
-        truncated=final_state.get("execution_truncated", False),
-        error=final_state.get("error") or None,
-    )
+    initial_state: dict[str, Any] = {
+        "question": body.question,
+        "connection_id": conv.connection_id,
+        "conversation_id": conversation_id,
+        "user_id": user.id,
+        "schema_ddl": schema_ddl,
+        "dialect": "postgresql",
+        "current_date": datetime.date.today().isoformat(),
+        "glossary": "",
+        "status": "running",
+        "error": "",
+        "error_kind": "",
+        "generated_sql": "",
+        "tables_used": [],
+        "generate_assumptions": [],
+        "validated_sql": "",
+        "execution_columns": [],
+        "execution_row_count": 0,
+        "execution_truncated": False,
+        "result_stats": "",
+        "result_preview": "",
+        "answer": "",
+        "answer_assumptions": [],
+        "total_tokens": 0,
+        "total_cost": 0.0,
+    }
+
+    if stream:
+        queue: asyncio.Queue[dict[str, Any] | None] = asyncio.Queue()
+        # Use create_task instead of BackgroundTasks so it runs concurrently with the stream
+        asyncio.create_task(
+            background_run_graph(
+                initial_state,
+                conversation_id,
+                user.id,
+                conv.connection_id,
+                queue,
+            )
+        )
+
+        async def event_generator() -> Any:
+            while True:
+                event = await queue.get()
+                if event is None:
+                    break
+                yield {"data": json.dumps(event)}
+
+        return EventSourceResponse(event_generator())
+    else:
+        # Non-streaming JSON fallback
+        queue = asyncio.Queue()
+        await background_run_graph(initial_state, conversation_id, user.id, conv.connection_id, queue)
+        
+        final_event = None
+        while not queue.empty():
+            event = await queue.get()
+            if event is not None and event.get("type") == "final":
+                final_event = event
+
+        if not final_event:
+            raise HTTPException(status_code=500, detail="Run failed without final event")
+
+        return QueryResponse(**final_event)
 
 
 # ---------------------------------------------------------------------------

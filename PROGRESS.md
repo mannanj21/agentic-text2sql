@@ -36,10 +36,10 @@
 | S3.6 | DONE | pending | Minimal LangGraph pipeline (generate→validate→execute→answer), Conversations API with RunRecorder tracing, AgentState as TypedDict; Full and Stack passed |
 | S4.1 | DONE | pending | Full async SQL validator: structural/function/schema/sensitive-column checks and read-only EXPLAIN validation; Full passed |
 | S4.2 | IN PROGRESS | pending | 38-case validator corpus, representative DB-boundary proof, and generated security report; fuzz-lite/full DB matrix remain |
-| S4.3 | TODO | — | No-unvalidated-execution enforcement |
-| S4.4 | TODO | — | Guardrail node |
-| S4.5 | TODO | — | Repair loop |
-| S4.6 | TODO | — | SSE streaming |
+| S4.3 | DONE | 99e3f6e | No-unvalidated-execution enforcement (import boundary, static check, agent safety) |
+| S4.4 | DONE | 0f1632b | Deterministic pre-LLM guardrail node |
+| S4.5 | DONE | cbf2fa0 | Shared-budget LLM repair loop with duplicate avoidance and recursion limit |
+| S4.6 | DONE | pending | SSE streaming endpoint: node_started/finished/sql_generated/attempt_failed/final events; background task decoupled from response; non-streaming JSON fallback; disconnect persistence; RunStep tracing |
 | S5.1 | TODO | — | Dataset format and validator |
 | S5.2 | TODO | — | Write the dataset |
 | S5.3 | TODO | — | Result-set comparison |
