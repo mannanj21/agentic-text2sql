@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
+from contextlib import suppress
+from pathlib import Path
+
 import pytest
+import yaml
 
 from app.config import Settings
 from app.database.crypto import CredentialCipher
@@ -12,6 +16,30 @@ from app.tools import execution
 from app.tools.execution import ExecutionError, execute
 
 pytestmark = [pytest.mark.asyncio, pytest.mark.integration, pytest.mark.security]
+
+_VALIDATOR_ONLY_CASES = {
+    "catalog_access",
+    "comment_trick_2",
+    "current_setting",
+    "information_schema_access",
+    "pg_advisory_lock",
+    "pg_terminate_backend",
+    "query_to_xml",
+    "sensitive_column_aliased",
+    "sensitive_column_direct",
+    "sensitive_column_order_by",
+    "sensitive_column_star",
+    "sensitive_column_subquery",
+    "sensitive_column_where",
+    "set_config",
+    "stacked_query_semicolon",
+}
+
+
+def _blocked_cases() -> list[dict[str, str]]:
+    corpus = Path(__file__).with_name("corpus.yaml")
+    cases: list[dict[str, str]] = yaml.safe_load(corpus.read_text(encoding="utf-8"))
+    return [case for case in cases if case["expected"] == "blocked"]
 
 
 def _settings() -> Settings:
@@ -53,3 +81,18 @@ async def test_sensitive_column_is_validator_only_defense(monkeypatch: pytest.Mo
     monkeypatch.setattr(execution, "get_settings", _settings)
     result = await execute(_connection(), _validated_sql("SELECT email FROM customers LIMIT 1"))
     assert result.columns == ["email"]
+
+
+@pytest.mark.parametrize("case", _blocked_cases(), ids=lambda case: case["id"])
+async def test_every_blocked_corpus_case_has_a_database_boundary(
+    monkeypatch: pytest.MonkeyPatch, case: dict[str, str]
+) -> None:
+    """Each malicious input is blocked below the validator or explicitly documented otherwise."""
+    monkeypatch.setattr(execution, "get_settings", _settings)
+    if case["id"] in _VALIDATOR_ONLY_CASES:
+        with suppress(ExecutionError):
+            await execute(_connection(), _validated_sql(case["sql"]))
+        return
+
+    with pytest.raises(ExecutionError):
+        await execute(_connection(), _validated_sql(case["sql"]))

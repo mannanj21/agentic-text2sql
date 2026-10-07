@@ -24,6 +24,11 @@ write DML, data-modifying CTEs, `SELECT INTO`, `pg_sleep` (statement timeout),
 and `pg_read_file` (role privileges). The executor additionally forces every
 transaction to read-only mode.
 
-Sensitive-column policy is intentionally **validator-only defense**: the demo
-readonly role may select `customers.email`, so metadata policy must prevent that
-value from reaching execution. This is covered by a dedicated integration test.
+Some controls are intentionally **validator-only defenses**: the demo readonly
+role may select `customers.email`; PostgreSQL allows harmless multi-`SELECT`
+input; and several PostgreSQL functions (for example `current_setting`,
+`set_config`, advisory locks, and a non-existent backend PID passed to
+`pg_terminate_backend`) are callable by the readonly role. Metadata policy and
+the deterministic single-statement/function rules therefore prevent these
+values or effects from reaching execution. The full corpus-boundary integration
+test classifies every blocked corpus case as database-blocked or validator-only.
