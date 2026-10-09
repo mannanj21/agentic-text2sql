@@ -1,11 +1,11 @@
 # PROGRESS
 
 ## Current
-- Stage: 7 (Frontend) | Step: S7.2 | Status: IN PROGRESS
+- Stage: 7 (Frontend) | Step: S7.3 | Status: IN PROGRESS
 - Branch: stage/6-retrieval-routing-ablations
-- Last commit: pending S7.1 auth/proxy checkpoint
+- Last commit: pending S7.2 connections UI checkpoint
 - Active model: Codex (GPT-5)
-- Next action: Implement connections UI; S6.8 remains blocked on live eval inputs.
+- Next action: Implement chat with streaming; S6.8 remains blocked on live eval inputs.
 
 ## Step Checklist
 | Step | Status | Commit | Notes |
@@ -54,7 +54,7 @@
 | S6.7 | DONE | pending | Optional structured planner behind PLANNER_ENABLED; disabled by default. |
 | S6.8 | TODO | — | Ablations |
 | S7.1 | DONE | pending | Next.js scaffold, typed API client, Vitest, same-origin proxy, and register/login UI; frontend gate passed. |
-| S7.2 | TODO | — | Connections UI |
+| S7.2 | DONE | pending | Connections list/create/status UI with safe error display; frontend gate passed. |
 | S7.3 | TODO | — | Chat with streaming |
 | S7.4 | TODO | — | Trace view and history |
 | S7.5 | TODO | — | Schema/glossary editor |
