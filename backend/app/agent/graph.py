@@ -19,6 +19,7 @@ from langgraph.graph import END, StateGraph
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agent.contextualize import contextualize
+from app.agent.charts import choose_chart
 from app.agent.nodes import (
     AnswerOutput,
     GenerateOutput,
@@ -79,6 +80,8 @@ class AgentState(TypedDict, total=False):
     execution_truncated: bool
     result_stats: str
     result_preview: str
+    verification_warning: str
+    chart_spec: dict[str, Any]
     answer: str
     answer_assumptions: list[str]
 
@@ -240,7 +243,29 @@ async def execute_node(state: dict[str, Any], *, connection: Connection) -> dict
         "execution_truncated": result.truncated,
         "result_stats": summary.stats,
         "result_preview": summary.rows_preview,
+        "chart_spec": choose_chart(result.columns, result.rows).model_dump(),
     }
+
+
+async def verify_node(state: dict[str, Any]) -> dict[str, Any]:
+    """Deterministic result checks that can trigger the existing repair budget."""
+    if state.get("execution_row_count", 0) == 0:
+        return {
+            "status": "failed",
+            "error": "Query returned no rows; re-check filters or dates.",
+            "error_kind": "empty_result",
+        }
+    if state.get("execution_columns") and all(
+        "nulls=" in line and "nulls=0" not in line
+        for line in state.get("result_stats", "").splitlines()
+    ):
+        return {
+            "status": "failed",
+            "error": "All result columns are null.",
+            "error_kind": "all_null",
+        }
+    warning = "Result was truncated." if state.get("execution_truncated") else ""
+    return {"verification_warning": warning}
 
 
 async def repair_node(state: dict[str, Any], *, llm: FakeLLM | LLMClient) -> dict[str, Any]:
@@ -422,11 +447,19 @@ def _route_after_validate(state: dict[str, Any]) -> str:
 def _route_after_execute(state: dict[str, Any]) -> str:
     """Route to answer on success, or to repair if budget remains or we need to exhaust it."""
     if state.get("status") != "failed":
-        return "answer"
+        return "verify"
     budget = state.get("repair_budget_remaining", 0)
     history = state.get("repair_history", [])
     if budget == 0 and not history:
         return END
+    return "repair"
+
+
+def _route_after_verify(state: dict[str, Any]) -> str:
+    if state.get("status") != "failed":
+        return "answer"
+    if state.get("repair_budget_remaining", 0) == 0:
+        return "answer"
     return "repair"
 
 
@@ -486,6 +519,9 @@ def build_graph(
     async def _repair(state: dict[str, Any]) -> dict[str, Any]:
         return await repair_node(state, llm=llm)
 
+    async def _verify(state: dict[str, Any]) -> dict[str, Any]:
+        return await verify_node(state)
+
     async def _answer(state: dict[str, Any]) -> dict[str, Any]:
         return await answer_node(state, llm=llm)
 
@@ -498,6 +534,7 @@ def build_graph(
     builder.add_node("intent_answer", intent_answer_node)
     builder.add_node("validate", _validate)
     builder.add_node("execute", _execute)
+    builder.add_node("verify", _verify)
     builder.add_node("repair", _repair)
     builder.add_node("answer", _answer)
 
@@ -528,7 +565,12 @@ def build_graph(
     builder.add_conditional_edges(
         "execute",
         _route_after_execute,
-        {"answer": "answer", "repair": "repair", END: END},
+        {"verify": "verify", "repair": "repair", END: END},
+    )
+    builder.add_conditional_edges(
+        "verify",
+        _route_after_verify,
+        {"answer": "answer", "repair": "repair"},
     )
     builder.add_conditional_edges(
         "repair",

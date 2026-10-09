@@ -150,6 +150,7 @@ class QueryResponse(BaseModel):
     row_count: int
     truncated: bool
     error: str | None
+    chart: dict[str, Any] | None = None
 
 
 class HistoryItem(BaseModel):
@@ -318,6 +319,7 @@ async def background_run_graph(
                     "assumptions": final_state.get("answer_assumptions", []),
                     "retrieved_schema_ids": final_state.get("retrieved_schema_ids", []),
                     "retrieval_latency_ms": final_state.get("retrieval_latency_ms", 0),
+                    "chart": final_state.get("chart_spec"),
                 }
                 run.result_preview = {
                     "columns": final_state.get("execution_columns", []),
@@ -354,6 +356,7 @@ async def background_run_graph(
                 row_count=final_state.get("execution_row_count", 0),
                 truncated=final_state.get("execution_truncated", False),
                 error=run.error,
+                chart=final_state.get("chart_spec"),
             )
 
         except BaseException as exc:
