@@ -3,7 +3,7 @@
 ## Current
 - Stage: 8 (Hardening) | Step: S8.6 | Status: IN PROGRESS
 - Branch: stage/6-retrieval-routing-ablations
-- Last commit: S8.6 CI authentication is configured; transient Docker Hub login and image-token timeouts are covered with bounded retries
+- Last commit: S8.6 CI authentication and bounded registry retries are configured; Docker Hub token-endpoint availability is the current external blocker
 - Active model: Codex (GPT-5)
 - Next action: Configure Docker Hub repository secrets and rerun CI. S8.5 optional real-LLM run and S6.8 live eval remain deferred.
 
@@ -64,7 +64,7 @@
 | S8.3 | DONE | pending | Worst-case FakeLLM SQL injection cannot reach executor; hostile result cells remain prompt-delimited and answer generation has no execution tool. Security suite: 85 passing. |
 | S8.4 | DONE | pending | One-shot migration, api-1/api-2 behind SSE-safe nginx, replica headers, routing, authenticated SSE delivery, cross-replica continuation, and recoverable one-replica failover are locally verified. |
 | S8.5 | IN PROGRESS | pending | Locust platform mode now includes deterministic fake-LLM query lifecycle. Measured baselines include a 5-user/20-second mixed run (157 requests, 0 failures; seven SSE queries, 380 ms p95). Optional real-LLM run remains. |
-| S8.6 | IN PROGRESS | pending | CI covers secret scan, backend lint/type/unit, Postgres authz matrix, frontend lint/type/unit/build, Playwright page E2E, and a seeded-demo security suite. Docker Hub credentials are confirmed available; transient login and image-token timeouts are covered by bounded retries around authenticated login and Compose startup. Seeded security already passed in the latest run; authorization is pending this retry validation. Manual eval remains deferred because the runner assumes local target DBs. |
+| S8.6 | IN PROGRESS | pending | CI covers secret scan, backend lint/type/unit, Postgres authz matrix, frontend lint/type/unit/build, Playwright page E2E, and a seeded-demo security suite. Docker Hub credentials are confirmed available; bounded retries cover authenticated login and Compose startup. In the latest run, all non-database jobs passed, but Docker Hub's token endpoint timed out through all retries for the database jobs; rerun after registry recovery. Manual eval remains deferred because the runner assumes local target DBs. |
 | S9.1 | TODO | — | README |
 | S9.2 | TODO | — | design.md |
 | S9.3 | TODO | — | security.md |
@@ -94,7 +94,7 @@
 - psql: MISSING (optional)
 
 ## Known Issues / Blockers
-- Docker Hub credentials are configured. The most recent authorization rerun timed out fetching an image token from Docker Hub; bounded Compose retries are pending validation.
+- Docker Hub credentials are configured. Authenticated Docker Hub token requests timed out through all bounded retries for the database jobs; wait for registry recovery, then rerun CI.
 - gh CLI not installed — blocks S0.3 (GitHub remote creation). Will guide human to install when we reach that step.
 - Docker Desktop not installed — blocks S0.6 (Docker Compose). Will guide human to install when we reach that step.
 
