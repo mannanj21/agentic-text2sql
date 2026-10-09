@@ -64,7 +64,7 @@
 | S8.3 | DONE | pending | Worst-case FakeLLM SQL injection cannot reach executor; hostile result cells remain prompt-delimited and answer generation has no execution tool. Security suite: 85 passing. |
 | S8.4 | DONE | pending | One-shot migration, api-1/api-2 behind SSE-safe nginx, replica headers, routing, authenticated SSE delivery, cross-replica continuation, and recoverable one-replica failover are locally verified. |
 | S8.5 | IN PROGRESS | pending | Locust platform mode now includes deterministic fake-LLM query lifecycle. Measured baselines include a 5-user/20-second mixed run (157 requests, 0 failures; seven SSE queries, 380 ms p95). Optional real-LLM run remains. |
-| S8.6 | IN PROGRESS | pending | Current stage-branch CI is green: secret scan, backend lint/type/unit, Postgres authz matrix, frontend lint/type/unit/build, and Playwright page E2E. Seeded demo integration/security and manual eval jobs remain; the current eval runner assumes local target DBs and needs repair before CI use. |
+| S8.6 | IN PROGRESS | pending | Current stage-branch CI is green: secret scan, backend lint/type/unit, Postgres authz matrix, frontend lint/type/unit/build, and Playwright page E2E. A seeded demo security job is pending CI validation; manual eval remains deferred because the current runner assumes local target DBs. |
 | S9.1 | TODO | — | README |
 | S9.2 | TODO | — | design.md |
 | S9.3 | TODO | — | security.md |

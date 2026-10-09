@@ -113,3 +113,27 @@ jobs:
         run: cd backend && uv sync --all-extras && uv run alembic upgrade head
       - name: Run authorization matrix
         run: cd backend && uv run pytest tests/authz -q --tb=short
+
+  security:
+    name: Seeded Security Suite
+    runs-on: ubuntu-latest
+    env:
+      APP_ENV: test
+      DATABASE_URL: postgresql+psycopg://test_user:test_password@localhost:5433/test_db
+      ENCRYPTION_KEY: 6BNEM3TxcyxQ0VJt7MoJSz1PRfudYCZTEtjkpAW0exQ=
+      SESSION_SECRET: ci-session-secret-not-production
+      LLM_PROVIDER: fake
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Start test and seeded demo databases
+        run: |
+          docker compose -f docker-compose.test.yml up -d --wait
+          docker compose up -d demo-ecommerce --wait
+      - name: Install dependencies and migrate test database
+        run: cd backend && uv sync --all-extras && uv run alembic upgrade head
+      - name: Run security corpus and database-boundary suite
+        run: cd backend && uv run pytest tests/security -q --tb=short
