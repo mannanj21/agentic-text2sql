@@ -86,30 +86,29 @@ jobs:
   authz:
     name: Authorization Matrix
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: pgvector/pgvector:pg16
-        env:
-          POSTGRES_USER: test_user
-          POSTGRES_PASSWORD: test_password
-          POSTGRES_DB: test_db
-        ports: ["5433:5432"]
-        options: >-
-          --health-cmd "pg_isready -U test_user -d test_db"
-          --health-interval 5s --health-timeout 5s --health-retries 10
     env:
       APP_ENV: test
       DATABASE_URL: postgresql+psycopg://test_user:test_password@localhost:5433/test_db
       SESSION_SECRET: ci-session-secret-not-production
       LLM_PROVIDER: fake
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v3
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Log in to Docker Hub when credentials are configured
+        if: ${{ env.DOCKERHUB_USERNAME != '' && env.DOCKERHUB_TOKEN != '' }}
+        uses: docker/login-action@v3
+        with:
+          username: ${{ env.DOCKERHUB_USERNAME }}
+          password: ${{ env.DOCKERHUB_TOKEN }}
       - name: Generate ephemeral encryption key
         run: echo "ENCRYPTION_KEY=$(python -c 'import base64, os; print(base64.urlsafe_b64encode(os.urandom(32)).decode())')" >> $GITHUB_ENV
+      - name: Start test database
+        run: docker compose -f docker-compose.test.yml up -d --wait
       - name: Install dependencies and migrate
         run: cd backend && uv sync --all-extras && uv run alembic upgrade head
       - name: Run authorization matrix
