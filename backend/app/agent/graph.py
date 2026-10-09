@@ -30,6 +30,7 @@ from app.agent.nodes import (
     run_generate_node,
     run_repair_node,
 )
+from app.agent.planner import plan_query
 from app.agent.schema_renderer import render_schema_ddl
 from app.config import get_settings
 from app.database.models import Connection
@@ -82,6 +83,7 @@ class AgentState(TypedDict, total=False):
     result_preview: str
     verification_warning: str
     chart_spec: dict[str, Any]
+    plan: dict[str, Any]
     answer: str
     answer_assumptions: list[str]
 
@@ -141,7 +143,10 @@ async def generate_node(state: dict[str, Any], *, llm: FakeLLM | LLMClient) -> d
         result, usage = await run_generate_node(
             llm=llm,
             question=state.get("standalone_question") or state["question"],
-            schema_ddl=state["schema_ddl"],
+            schema_ddl=(
+                state["schema_ddl"]
+                + (f"\n/* Plan: {state['plan']} */" if state.get("plan") else "")
+            ),
             dialect=state.get("dialect", "postgresql"),
             current_date=state.get("current_date") or datetime.date.today().isoformat(),
             glossary=state.get("glossary") or None,
@@ -156,6 +161,22 @@ async def generate_node(state: dict[str, Any], *, llm: FakeLLM | LLMClient) -> d
         "generated_sql": result.sql,
         "tables_used": result.tables_used,
         "generate_assumptions": result.assumptions,
+        "total_tokens": state.get("total_tokens", 0) + usage.total_tokens,
+        "total_cost": state.get("total_cost", 0.0) + usage.cost_usd,
+    }
+
+
+async def plan_node(state: dict[str, Any], *, llm: FakeLLM | LLMClient) -> dict[str, Any]:
+    try:
+        result, usage = await plan_query(llm, state["standalone_question"], state["schema_ddl"])
+    except LLMProviderError as exc:
+        return {
+            "status": "failed",
+            "error": f"LLM plan failed: {exc}",
+            "error_kind": "llm_error",
+        }
+    return {
+        "plan": result.model_dump(),
         "total_tokens": state.get("total_tokens", 0) + usage.total_tokens,
         "total_cost": state.get("total_cost", 0.0) + usage.cost_usd,
     }
@@ -507,6 +528,9 @@ def build_graph(
     async def _retrieve(state: dict[str, Any]) -> dict[str, Any]:
         return await retrieve_node(state, db=db)
 
+    async def _plan(state: dict[str, Any]) -> dict[str, Any]:
+        return await plan_node(state, llm=llm)
+
     async def _schema_context(state: dict[str, Any]) -> dict[str, Any]:
         return await schema_context_node(state, connection=connection, db=db)
 
@@ -530,6 +554,7 @@ def build_graph(
     builder.add_node("generate", _generate)
     builder.add_node("contextualize", _contextualize)
     builder.add_node("retrieve", _retrieve)
+    builder.add_node("plan", _plan)
     builder.add_node("schema_context", _schema_context)
     builder.add_node("intent_answer", intent_answer_node)
     builder.add_node("validate", _validate)
@@ -551,7 +576,12 @@ def build_graph(
             "intent_answer": "intent_answer",
         },
     )
-    builder.add_edge("retrieve", "generate")
+    builder.add_conditional_edges(
+        "retrieve",
+        lambda _state: "plan" if get_settings().PLANNER_ENABLED else "generate",
+        {"plan": "plan", "generate": "generate"},
+    )
+    builder.add_conditional_edges("plan", _route_after_generate, {"validate": "validate", END: END})
     builder.add_edge("schema_context", "intent_answer")
     builder.add_edge("intent_answer", END)
     builder.add_conditional_edges(

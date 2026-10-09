@@ -1,11 +1,11 @@
 # PROGRESS
 
 ## Current
-- Stage: 6 (Retrieval, Routing, Ablations) | Step: S6.7 | Status: IN PROGRESS
+- Stage: 6 (Retrieval, Routing, Ablations) | Step: S6.8 | Status: IN PROGRESS
 - Branch: stage/6-retrieval-routing-ablations
-- Last commit: pending S6.4-S6.6 checkpoint
+- Last commit: pending S6.7 checkpoint
 - Active model: Codex (GPT-5)
-- Next action: Implement optional planner behind PLANNER_ENABLED.
+- Next action: Run required retrieval/routing/planner ablations and document evidence-based defaults.
 
 ## Step Checklist
 | Step | Status | Commit | Notes |
@@ -51,6 +51,7 @@
 | S6.4 | DONE | 8d6d57e | Fast intent routing, bounded no-row history, safe fallback, and deferred retrieval. |
 | S6.5 | DONE | pending | Deterministic empty/all-null/truncation verification routes failures through shared repair budget. |
 | S6.6 | DONE | pending | Pure deterministic chart selection and chart spec included in final response. |
+| S6.7 | DONE | pending | Optional structured planner behind PLANNER_ENABLED; disabled by default. |
 | S6.7 | TODO | — | Planner |
 | S6.8 | TODO | — | Ablations |
 | S7.1 | TODO | — | Frontend scaffold |
