@@ -1,11 +1,11 @@
 # PROGRESS
 
 ## Current
-- Stage: 6 (Retrieval, Routing, Ablations) | Step: S6.8 | Status: IN PROGRESS
+- Stage: 7 (Frontend) | Step: S7.1 | Status: IN PROGRESS
 - Branch: stage/6-retrieval-routing-ablations
-- Last commit: pending S6.7 checkpoint
+- Last commit: pending S7.1 frontend scaffold checkpoint
 - Active model: Codex (GPT-5)
-- Next action: Run required retrieval/routing/planner ablations and document evidence-based defaults.
+- Next action: Finish S7.1 authentication pages and same-origin API proxy; S6.8 remains blocked on live eval inputs.
 
 ## Step Checklist
 | Step | Status | Commit | Notes |
@@ -53,7 +53,7 @@
 | S6.6 | DONE | pending | Pure deterministic chart selection and chart spec included in final response. |
 | S6.7 | DONE | pending | Optional structured planner behind PLANNER_ENABLED; disabled by default. |
 | S6.8 | TODO | — | Ablations |
-| S7.1 | TODO | — | Frontend scaffold |
+| S7.1 | IN PROGRESS | pending | Next.js TypeScript/Tailwind/App Router scaffold, typed API client, Vitest, and frontend gate complete; auth UI/proxy remain. |
 | S7.2 | TODO | — | Connections UI |
 | S7.3 | TODO | — | Chat with streaming |
 | S7.4 | TODO | — | Trace view and history |
