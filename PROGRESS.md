@@ -3,7 +3,7 @@
 ## Current
 - Stage: 8 (Hardening) | Step: S8.6 | Status: IN PROGRESS
 - Branch: stage/6-retrieval-routing-ablations
-- Last commit: pending S8.6 Docker Hub authentication checkpoint
+- Last commit: S8.6 CI authentication checkpoint pushed; awaiting Docker Hub credentials and CI rerun
 - Active model: Codex (GPT-5)
 - Next action: Configure Docker Hub repository secrets and rerun CI. S8.5 optional real-LLM run and S6.8 live eval remain deferred.
 
