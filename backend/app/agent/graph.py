@@ -18,8 +18,8 @@ from typing import Any, Literal, TypedDict
 from langgraph.graph import END, StateGraph
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.agent.contextualize import contextualize
 from app.agent.charts import choose_chart
+from app.agent.contextualize import contextualize
 from app.agent.nodes import (
     AnswerOutput,
     GenerateOutput,
