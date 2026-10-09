@@ -1,11 +1,11 @@
 # PROGRESS
 
 ## Current
-- Stage: 8 (Hardening) | Step: S8.2 | Status: IN PROGRESS
+- Stage: 8 (Hardening) | Step: S8.3 | Status: IN PROGRESS
 - Branch: stage/6-retrieval-routing-ablations
-- Last commit: pending S8.1 rate-limiting checkpoint
+- Last commit: pending S8.2 authorization-matrix checkpoint
 - Active model: Codex (GPT-5)
-- Next action: Generate the complete OpenAPI-driven authorization matrix. S6.8 remains blocked on live eval inputs; S7.6 needs deterministic fake-LLM browser scenarios.
+- Next action: Add worst-case prompt-injection tests. S6.8 remains blocked on live eval inputs; S7.6 needs deterministic fake-LLM browser scenarios.
 
 ## Step Checklist
 | Step | Status | Commit | Notes |
@@ -60,7 +60,7 @@
 | S7.5 | DONE | pending | Schema metadata viewer and glossary editor page; frontend gate passed. |
 | S7.6 | IN PROGRESS | pending | Playwright configured; live auth-page E2E passes against local stack. Full deterministic conversation/repair/authz scenarios remain. |
 | S8.1 | DONE | pending | Postgres atomic fixed-window quotas on query, costly connection, and login endpoints; HMAC login subjects, old-window cleanup, ADR, migration, rollover/isolation/concurrency coverage. Focused 18 tests, full unit suite (166) and mypy pass. |
-| S8.2 | TODO | — | Authorization matrix |
+| S8.2 | DONE | pending | OpenAPI-derived matrix covers every production resource-ID route, asserting cross-user 404 and unauthenticated 401; test-only harness route is isolated. 25 authz tests pass. |
 | S8.3 | TODO | — | Prompt-injection tests |
 | S8.4 | TODO | — | nginx and 2 replicas |
 | S8.5 | TODO | — | Load test |
