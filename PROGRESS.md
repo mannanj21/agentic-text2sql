@@ -1,11 +1,11 @@
 # PROGRESS
 
 ## Current
-- Stage: 4 (Safety, Repair, SSE) | Step: S4.2 | Status: IN PROGRESS
-- Branch: stage/4-safety-repair-sse
-- Last commit: pending S4.2 checkpoint
+- Stage: 6 (Retrieval, Routing, Ablations) | Step: S6.4 | Status: IN PROGRESS
+- Branch: stage/6-retrieval-routing-ablations
+- Last commit: pending S6.3 checkpoint
 - Active model: Codex (GPT-5)
-- Next action: Finish S4.2 with fuzz-lite coverage and the complete database-boundary matrix.
+- Next action: Implement S6.4 contextualization and deterministic intent routing.
 
 ## Step Checklist
 | Step | Status | Commit | Notes |
@@ -47,7 +47,7 @@
 | S5.5 | DONE | pending | Baseline reports created (docs/eval/baseline-dev.md + baseline-test.md); live metrics pending API key + ecommerce DB |
 | S6.1 | DONE | pending | Embeddings |
 | S6.2 | DONE | pending | Metadata enrichment |
-| S6.3 | IN PROGRESS | pending | Schema retrieval |
+| S6.3 | DONE | pending | Top-k table/column vector retrieval, one-hop FK expansion, small-schema bypass, sensitive-safe compact DDL, glossary hits, state/run tracing, and integration coverage. Live dev eval remains unmeasured pending configured target data/model. |
 | S6.4 | TODO | — | Contextualize + route |
 | S6.5 | TODO | — | Deterministic verification |
 | S6.6 | TODO | — | Chart selection |

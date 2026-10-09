@@ -59,6 +59,8 @@ class AgentState(TypedDict, total=False):
     dialect: str
     current_date: str
     glossary: str
+    retrieved_schema_ids: list[str]
+    retrieval_latency_ms: int
 
     # --- Node outputs ---
     generated_sql: str

@@ -125,14 +125,16 @@ async def test_enrichment_token_cap(enrichment_setup):
 async def test_sample_values_not_gathered_when_opted_out(enrichment_setup):
     connection_id = enrichment_setup
 
-    with patch("app.tools.enrichment._target_engine") as mock_engine:
-        with patch("app.tools.enrichment.LLMClient") as mock_llm_cls:
-            mock_llm_instance = mock_llm_cls.return_value
-            mock_llm_instance.complete_structured = AsyncMock()
-            mock_llm_instance.aclose = AsyncMock()
+    with (
+        patch("app.tools.enrichment._target_engine") as mock_engine,
+        patch("app.tools.enrichment.LLMClient") as mock_llm_cls,
+    ):
+        mock_llm_instance = mock_llm_cls.return_value
+        mock_llm_instance.complete_structured = AsyncMock()
+        mock_llm_instance.aclose = AsyncMock()
 
-            await enrich_connection_metadata(connection_id)
-            mock_engine.assert_not_called()
+        await enrich_connection_metadata(connection_id)
+        mock_engine.assert_not_called()
 
 
 async def test_sample_values_never_for_sensitive(enrichment_setup):
@@ -144,7 +146,9 @@ async def test_sample_values_never_for_sensitive(enrichment_setup):
         await db.commit()
 
     with patch("app.tools.enrichment.resolve_target") as mock_resolve:
-        mock_resolve.return_value = MagicMock(hostaddr="127.0.0.1", port=5432, original_host="localhost")
+        mock_resolve.return_value = MagicMock(
+            hostaddr="127.0.0.1", port=5432, original_host="localhost"
+        )
         with patch("app.tools.enrichment._target_engine") as mock_engine_func:
             mock_engine = mock_engine_func.return_value
             mock_conn = MagicMock()
@@ -160,7 +164,9 @@ async def test_sample_values_never_for_sensitive(enrichment_setup):
                 mock_result_llm = MagicMock()
                 mock_result_llm.description = "dummy desc"
                 mock_result_llm.columns = []
-                mock_llm_instance.complete_structured = AsyncMock(return_value=(mock_result_llm, MagicMock(total_tokens=10)))
+                mock_llm_instance.complete_structured = AsyncMock(
+                    return_value=(mock_result_llm, MagicMock(total_tokens=10))
+                )
                 mock_llm_instance.aclose = AsyncMock()
 
                 await enrich_connection_metadata(connection_id)

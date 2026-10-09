@@ -14,13 +14,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sse_starlette.sse import EventSourceResponse
 
 from app.agent.graph import build_graph
-from app.agent.schema_renderer import render_schema_ddl
 from app.auth import current_user
 from app.config import get_settings
 from app.database.core import AsyncSessionLocal, get_db
 from app.database.models import Connection, Conversation, Message, Run, RunStep, User
 from app.llm.client import LLMClient
 from app.persistence.tracing import RunRecorder
+from app.tools.retrieval import retrieve_schema
 
 router = APIRouter(tags=["Conversations"])
 CurrentUser = Annotated[User, Depends(current_user)]
@@ -312,6 +312,8 @@ async def background_run_graph(
                 run.result_meta = {
                     "answer": final_state.get("answer"),
                     "assumptions": final_state.get("answer_assumptions", []),
+                    "retrieved_schema_ids": final_state.get("retrieved_schema_ids", []),
+                    "retrieval_latency_ms": final_state.get("retrieval_latency_ms", 0),
                 }
                 run.result_preview = {
                     "columns": final_state.get("execution_columns", []),
@@ -370,7 +372,7 @@ async def query_conversation(
     conv = await _owned_conversation(conversation_id, user.id, db)
     connection = await _owned_connection(conv.connection_id, user.id, db)
 
-    schema_ddl = await render_schema_ddl(connection, db)
+    retrieved = await retrieve_schema(db, connection.id, body.question)
 
     user_msg = Message(
         conversation_id=conversation_id,
@@ -385,7 +387,9 @@ async def query_conversation(
         "connection_id": conv.connection_id,
         "conversation_id": conversation_id,
         "user_id": user.id,
-        "schema_ddl": schema_ddl,
+        "schema_ddl": retrieved.ddl,
+        "retrieved_schema_ids": retrieved.table_ids,
+        "retrieval_latency_ms": retrieved.latency_ms,
         "dialect": "postgresql",
         "current_date": datetime.date.today().isoformat(),
         "glossary": "",
