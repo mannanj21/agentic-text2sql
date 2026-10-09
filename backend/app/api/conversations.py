@@ -2,19 +2,22 @@
 
 from __future__ import annotations
 
+import asyncio
 import datetime
+import json
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sse_starlette.sse import EventSourceResponse
 
 from app.agent.graph import build_graph
 from app.agent.schema_renderer import render_schema_ddl
 from app.auth import current_user
 from app.config import get_settings
-from app.database.core import get_db
+from app.database.core import AsyncSessionLocal, get_db
 from app.database.models import Connection, Conversation, Message, Run, RunStep, User
 from app.llm.client import LLMClient
 from app.persistence.tracing import RunRecorder
@@ -213,15 +216,9 @@ async def rename_conversation(
 # ---------------------------------------------------------------------------
 
 
-import asyncio
-import json
-
-from sse_starlette.sse import EventSourceResponse
-
-from app.database.core import AsyncSessionLocal
-
-
-async def _put_event(queue: asyncio.Queue | None, event_type: str, **data: Any) -> None:
+async def _put_event(
+    queue: asyncio.Queue[dict[str, Any] | None] | None, event_type: str, **data: Any
+) -> None:
     if queue is not None:
         await queue.put({"type": event_type, **data})
 
@@ -231,7 +228,7 @@ async def background_run_graph(
     conversation_id: str,
     user_id: str,
     connection_id: str,
-    queue: asyncio.Queue | None,
+    queue: asyncio.Queue[dict[str, Any] | None] | None,
 ) -> None:
     # Use a new DB session for the background task
     async with AsyncSessionLocal() as db:
@@ -339,6 +336,7 @@ async def background_run_graph(
 
             # Emit final event OUTSIDE the RunRecorder so __aexit__ sets status="completed"
             run = recorder.run
+            assert run is not None  # always set after __aenter__
             await _put_event(
                 queue,
                 "final",
@@ -409,10 +407,12 @@ async def query_conversation(
         "total_cost": 0.0,
     }
 
+    queue: asyncio.Queue[dict[str, Any] | None]
     if stream:
-        queue: asyncio.Queue[dict[str, Any] | None] = asyncio.Queue()
-        # Use create_task instead of BackgroundTasks so it runs concurrently with the stream
-        asyncio.create_task(
+        queue = asyncio.Queue()
+        # Use create_task so the run continues even if the client disconnects.
+        # Store the reference to prevent the task from being garbage-collected.
+        _bg_task = asyncio.create_task(  # noqa: RUF006
             background_run_graph(
                 initial_state,
                 conversation_id,

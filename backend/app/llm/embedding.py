@@ -49,7 +49,8 @@ class EmbedderClient:
                     f"Expected dimension {self.dim}, but Ollama returned {len(emb)} for input {i}."
                 )
 
-        return embeddings
+        result: list[list[float]] = embeddings
+        return result
 
     async def aclose(self) -> None:
         if self._owns_client:

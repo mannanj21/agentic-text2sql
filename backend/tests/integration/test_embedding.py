@@ -56,7 +56,7 @@ async def test_store_and_query_pgvector():
 
         vec1 = [0.0] * 1024
         vec1[0] = 1.0
-        
+
         vec2 = [0.0] * 1024
         vec2[1] = 1.0
 

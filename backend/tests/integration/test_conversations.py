@@ -218,7 +218,7 @@ async def test_sse_streaming_disconnect_still_persists(
     db: AsyncSession,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """If the client disconnects mid-stream, the background task still completes and persists the run."""
+    """Background task completes and persists the run even when client disconnects mid-stream."""
     import asyncio
 
     class SlowMockGraph:

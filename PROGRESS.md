@@ -46,8 +46,8 @@
 | S5.4 | DONE | pending | Metrics module (execution/routing accuracy, schema P/R, self-correction, latency p50/p95, tokens/cost); runner logic; CLI; 38 eval tests |
 | S5.5 | DONE | pending | Baseline reports created (docs/eval/baseline-dev.md + baseline-test.md); live metrics pending API key + ecommerce DB |
 | S6.1 | DONE | pending | Embeddings |
-| S6.2 | TODO | — | Metadata enrichment |
-| S6.3 | TODO | — | Schema retrieval |
+| S6.2 | DONE | pending | Metadata enrichment |
+| S6.3 | IN PROGRESS | pending | Schema retrieval |
 | S6.4 | TODO | — | Contextualize + route |
 | S6.5 | TODO | — | Deterministic verification |
 | S6.6 | TODO | — | Chart selection |

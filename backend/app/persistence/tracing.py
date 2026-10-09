@@ -29,6 +29,7 @@ class RunRecorder:
         self.run: Run | None = None
         self._started = 0.0
         self._run_token: object | None = None
+        self._step_starts: dict[str, float] = {}  # step.id -> perf_counter at start
 
     async def __aenter__(self) -> RunRecorder:
         self.run = Run(
@@ -88,7 +89,7 @@ class RunRecorder:
         )
         self.db.add(step)
         await self.db.flush()
-        step._started_at = time.perf_counter()  # Store internally for timing
+        self._step_starts[step.id] = time.perf_counter()
         return step
 
     async def end_step(self, step: RunStep, exc: BaseException | None = None) -> None:
@@ -100,7 +101,7 @@ class RunRecorder:
             step.error = str(exc)
         else:
             step.status = "completed"
-        started = getattr(step, "_started_at", time.perf_counter())
+        started = self._step_starts.pop(step.id, time.perf_counter())
         step.latency_ms = max(1, int((time.perf_counter() - started) * 1000))
         await self.db.flush()
 

@@ -101,7 +101,7 @@ def check_input(question: str) -> None:
             "Question contains suspicious Unicode characters.",
         )
 
-    for kind, pattern in _INJECTION_PATTERNS:
+    for _kind, pattern in _INJECTION_PATTERNS:
         if pattern.search(question):
             raise GuardrailError(
                 "injection_heuristic",
