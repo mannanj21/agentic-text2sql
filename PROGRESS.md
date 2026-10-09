@@ -3,7 +3,7 @@
 ## Current
 - Stage: 8 (Hardening) | Step: S8.6 | Status: IN PROGRESS
 - Branch: stage/6-retrieval-routing-ablations
-- Last commit: S8.6 CI authentication checkpoint pushed; awaiting Docker Hub credentials and CI rerun
+- Last commit: S8.6 CI authentication is configured; Docker Hub returned a transient HTTP 500 during authenticated login, so bounded login retries are being added
 - Active model: Codex (GPT-5)
 - Next action: Configure Docker Hub repository secrets and rerun CI. S8.5 optional real-LLM run and S6.8 live eval remain deferred.
 
@@ -64,7 +64,7 @@
 | S8.3 | DONE | pending | Worst-case FakeLLM SQL injection cannot reach executor; hostile result cells remain prompt-delimited and answer generation has no execution tool. Security suite: 85 passing. |
 | S8.4 | DONE | pending | One-shot migration, api-1/api-2 behind SSE-safe nginx, replica headers, routing, authenticated SSE delivery, cross-replica continuation, and recoverable one-replica failover are locally verified. |
 | S8.5 | IN PROGRESS | pending | Locust platform mode now includes deterministic fake-LLM query lifecycle. Measured baselines include a 5-user/20-second mixed run (157 requests, 0 failures; seven SSE queries, 380 ms p95). Optional real-LLM run remains. |
-| S8.6 | IN PROGRESS | pending | CI covers secret scan, backend lint/type/unit, Postgres authz matrix, frontend lint/type/unit/build, Playwright page E2E, and a seeded-demo security suite. Docker Hub's anonymous pull limit affects both database jobs; both now start Compose after an optional `DOCKERHUB_USERNAME`/`DOCKERHUB_TOKEN` login. Manual eval remains deferred because the runner assumes local target DBs. |
+| S8.6 | IN PROGRESS | pending | CI covers secret scan, backend lint/type/unit, Postgres authz matrix, frontend lint/type/unit/build, Playwright page E2E, and a seeded-demo security suite. Docker Hub credentials are confirmed available; a rerun hit a transient registry HTTP 500 during login, so both database jobs use bounded authenticated-login retries before Compose startup. Manual eval remains deferred because the runner assumes local target DBs. |
 | S9.1 | TODO | — | README |
 | S9.2 | TODO | — | design.md |
 | S9.3 | TODO | — | security.md |
@@ -94,7 +94,7 @@
 - psql: MISSING (optional)
 
 ## Known Issues / Blockers
-- CI seeded-demo security suite requires Docker Hub repository secrets (`DOCKERHUB_USERNAME` and a read-only `DOCKERHUB_TOKEN`) to avoid GitHub-hosted-runner anonymous image-pull limits.
+- Docker Hub credentials are configured. The most recent rerun received a transient Docker Hub HTTP 500 during login; workflow retries are pending validation.
 - gh CLI not installed — blocks S0.3 (GitHub remote creation). Will guide human to install when we reach that step.
 - Docker Desktop not installed — blocks S0.6 (Docker Compose). Will guide human to install when we reach that step.
 
