@@ -35,7 +35,7 @@
 | S3.5 | DONE | pending | Versioned prompts (generate_v1, answer_v1), result summary builder, generate/answer nodes, injection-isolation tests; Quick passed |
 | S3.6 | DONE | pending | Minimal LangGraph pipeline (generate→validate→execute→answer), Conversations API with RunRecorder tracing, AgentState as TypedDict; Full and Stack passed |
 | S4.1 | DONE | pending | Full async SQL validator: structural/function/schema/sensitive-column checks and read-only EXPLAIN validation; Full passed |
-| S4.2 | IN PROGRESS | pending | 38-case validator corpus, representative DB-boundary proof, and generated security report; fuzz-lite/full DB matrix remain |
+| S4.2 | DONE | bc4e8d6 | 38-case validator corpus, fuzz-lite, complete database-boundary matrix, and generated security report; 84 security tests pass. |
 | S4.3 | DONE | 99e3f6e | No-unvalidated-execution enforcement (import boundary, static check, agent safety) |
 | S4.4 | DONE | 0f1632b | Deterministic pre-LLM guardrail node |
 | S4.5 | DONE | cbf2fa0 | Shared-budget LLM repair loop with duplicate avoidance and recursion limit |
@@ -52,7 +52,6 @@
 | S6.5 | DONE | pending | Deterministic empty/all-null/truncation verification routes failures through shared repair budget. |
 | S6.6 | DONE | pending | Pure deterministic chart selection and chart spec included in final response. |
 | S6.7 | DONE | pending | Optional structured planner behind PLANNER_ENABLED; disabled by default. |
-| S6.7 | TODO | — | Planner |
 | S6.8 | TODO | — | Ablations |
 | S7.1 | TODO | — | Frontend scaffold |
 | S7.2 | TODO | — | Connections UI |
