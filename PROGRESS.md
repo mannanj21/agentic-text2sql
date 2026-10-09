@@ -3,9 +3,9 @@
 ## Current
 - Stage: 8 (Hardening) | Step: S8.5 | Status: IN PROGRESS
 - Branch: stage/6-retrieval-routing-ablations
-- Last commit: pending S8.4 deployment verification checkpoint
+- Last commit: pending S8.5 platform load-test checkpoint
 - Active model: Codex (GPT-5)
-- Next action: Build and run the planned load test. S6.8 remains blocked on live eval inputs; S7.6 needs deterministic fake-LLM browser scenarios.
+- Next action: Extend load scenarios to real query lifecycle under a deterministic fake-LLM deployment mode, then run a longer measured pass. S6.8 remains blocked on live eval inputs; S7.6 needs deterministic fake-LLM browser scenarios.
 
 ## Step Checklist
 | Step | Status | Commit | Notes |
@@ -63,7 +63,7 @@
 | S8.2 | DONE | pending | OpenAPI-derived matrix covers every production resource-ID route, asserting cross-user 404 and unauthenticated 401; test-only harness route is isolated. 25 authz tests pass. |
 | S8.3 | DONE | pending | Worst-case FakeLLM SQL injection cannot reach executor; hostile result cells remain prompt-delimited and answer generation has no execution tool. Security suite: 85 passing. |
 | S8.4 | DONE | pending | One-shot migration, api-1/api-2 behind SSE-safe nginx, replica headers, routing, authenticated SSE delivery, cross-replica continuation, and recoverable one-replica failover are locally verified. |
-| S8.5 | TODO | — | Load test |
+| S8.5 | IN PROGRESS | pending | Locust platform-mode scaffold and a measured 2-user/10-second nginx baseline (31 requests, 0 failures, 3.26 RPS, 13 ms average) are committed; deterministic query lifecycle and real-LLM runs remain. |
 | S8.6 | TODO | — | Complete CI |
 | S9.1 | TODO | — | README |
 | S9.2 | TODO | — | design.md |

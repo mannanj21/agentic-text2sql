@@ -1,0 +1,28 @@
+# Load Testing
+
+`loadtest/locustfile.py` provides the platform-mode baseline. It intentionally
+uses ordinary authenticated reads and no LLM calls, so API/DB pool/nginx
+behaviour can be measured without spending provider quota.
+
+Run it against the local two-replica stack after creating a normal test user:
+
+```powershell
+$env:LOADTEST_EMAIL = "loadtest@example.com"
+$env:LOADTEST_PASSWORD = "a-strong-password"
+cd loadtest
+..\backend\.venv\Scripts\locust.exe -f locustfile.py --host http://localhost:8000
+```
+
+Use the Locust web UI to choose a small user count and duration, then save its
+CSV/HTML output. Commit only measured environment details and metrics to this
+document; do not invent a throughput or latency number. A short real-LLM run
+is deferred until its quota and target credentials are explicitly available.
+
+## Measured platform-mode baseline
+
+On 2026-10-10, the local Docker stack (nginx plus two API replicas and the
+local Postgres app database) was exercised with Locust 2.46.7 for 10 seconds:
+two users ramped at one user/second, issuing health and authenticated read
+requests. The run completed 31 requests with zero failures (3.26 requests/s),
+13 ms average latency, 88 ms p95, and 89 ms p99. This is a tiny smoke baseline,
+not a capacity claim; it did not issue real LLM-backed queries.
