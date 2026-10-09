@@ -26,3 +26,9 @@ two users ramped at one user/second, issuing health and authenticated read
 requests. The run completed 31 requests with zero failures (3.26 requests/s),
 13 ms average latency, 88 ms p95, and 89 ms p99. This is a tiny smoke baseline,
 not a capacity claim; it did not issue real LLM-backed queries.
+
+With `docker-compose.loadtest.yml` enabling the deterministic fake provider at
+50 ms simulated LLM latency, a one-user 10-second query-lifecycle run completed
+17 requests with zero failures. It included two SSE query requests (499 ms
+average, 650 ms maximum); aggregate average latency was 75 ms and request rate
+was 1.83 requests/s. This remains a smoke baseline, not a capacity claim.

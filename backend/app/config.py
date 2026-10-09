@@ -39,6 +39,7 @@ class Settings(BaseSettings):
     STRONG_MODEL: str = "gemini-2.5-pro"
     LLM_TIMEOUT_SECONDS: float = 30.0
     LLM_MAX_RETRIES: int = 3
+    FAKE_LLM_LATENCY_MS: int = 0
 
     # --- Ollama ---
     OLLAMA_BASE_URL: str = "http://localhost:11434"

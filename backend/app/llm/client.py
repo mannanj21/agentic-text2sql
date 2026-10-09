@@ -116,18 +116,37 @@ class LLMClient:
     async def _request(
         self, model: str, messages: Sequence[Message], schema: type[BaseModel]
     ) -> tuple[str, TokenUsage]:
+        if self.settings.LLM_PROVIDER == "fake":
+            latency = self.settings.FAKE_LLM_LATENCY_MS / 1000
+            if latency:
+                await self._sleep(latency)
+            return json.dumps(self._fake_response(schema)), TokenUsage.zero()
         for attempt in range(self.settings.LLM_MAX_RETRIES + 1):
             try:
                 if self.settings.LLM_PROVIDER == "gemini":
                     return await self._gemini(model, messages, schema)
                 if self.settings.LLM_PROVIDER == "ollama":
                     return await self._ollama(model, messages, schema)
-                raise LLMProviderError("The fake provider must use FakeLLM.")
+                raise LLMProviderError(f"Unsupported LLM provider: {self.settings.LLM_PROVIDER}")
             except (httpx.TransportError, LLMProviderError) as exc:
                 if attempt >= self.settings.LLM_MAX_RETRIES or not self._is_retryable(exc):
                     raise
                 await self._sleep((0.5 * (2**attempt)) + (self._random() * 0.1))
         raise AssertionError("unreachable")
+
+    @staticmethod
+    def _fake_response(schema: type[BaseModel]) -> dict[str, Any]:
+        """Return safe deterministic structured output for local platform tests."""
+        fields = set(schema.model_fields)
+        if "intent" in fields:
+            return {"intent": "DATABASE_QUERY", "standalone_question": "synthetic query"}
+        if {"sql", "tables_used", "assumptions"} <= fields:
+            return {"sql": "SELECT 1 AS value", "tables_used": [], "assumptions": []}
+        if "answer" in fields:
+            return {"answer": "Synthetic platform-mode response.", "assumptions": []}
+        if "tables" in fields and "joins" in fields:
+            return {"tables": [], "joins": [], "filters": [], "group_by": []}
+        raise LLMProviderError(f"Fake provider has no response for schema {schema.__name__}.")
 
     async def _gemini(
         self, model: str, messages: Sequence[Message], schema: type[BaseModel]
