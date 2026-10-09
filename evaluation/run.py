@@ -17,6 +17,9 @@ from evaluation.validate_dataset import load_all_datasets
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("eval.run")
+# HTTP client request URLs can contain provider API keys; retain only warnings.
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("httpcore").setLevel(logging.WARNING)
 
 
 def get_git_sha() -> str:
@@ -148,7 +151,9 @@ async def async_main() -> None:
 
 
 def main() -> None:
-    asyncio.run(async_main())
+    # psycopg async does not support Windows' default ProactorEventLoop.
+    # SelectorEventLoop is portable enough for this small CLI runner.
+    asyncio.run(async_main(), loop_factory=asyncio.SelectorEventLoop)
 
 
 if __name__ == "__main__":

@@ -20,11 +20,13 @@ from evaluation.validate_dataset import DatasetCase
 from app.config import Settings
 from app.database.core import AsyncSessionLocal
 from app.database.crypto import CredentialCipher
-from app.database.models import Connection, Conversation, Run, User
+from app.database.models import Connection, Conversation, Run, RunStep, User
 from app.agent.graph import build_graph
 from app.llm.client import LLMClient
 from app.persistence.tracing import RunRecorder
 from app.tools.introspection import sync_schema_metadata
+from app.tools.execution import execute
+from app.guardrails.sql_validator import validate_sql
 from sqlalchemy import select
 
 
@@ -35,6 +37,13 @@ class RunnerContext:
         self.user = user
         self.connections = connections
         self.llm = llm
+
+
+async def _run_eval_sql(ctx: RunnerContext, connection: Connection, sql: str) -> tuple[list[str], list[list[object]]]:
+    """Execute eval SQL through the production validator/executor boundary."""
+    validated = await validate_sql(sql, connection, ctx.db)
+    result = await execute(connection, validated)
+    return result.columns, result.rows
 
 
 async def setup_eval_context(settings: Settings) -> RunnerContext:
@@ -109,6 +118,7 @@ async def run_case(ctx: RunnerContext, case: DatasetCase) -> EvalResult:
     
     latency = {"llm": 0.0, "db": 0.0, "other": 0.0}
     start_times = {}
+    active_steps: dict[str, RunStep] = {}
     retries = 0
     final_sql = None
     final_answer = None
@@ -134,7 +144,7 @@ async def run_case(ctx: RunnerContext, case: DatasetCase) -> EvalResult:
                     
                 if kind == "on_chain_start":
                     start_times[name] = time.time()
-                    await recorder.start_step(name)
+                    active_steps[name] = await recorder.start_step(name)
                 elif kind == "on_chain_end":
                     step_duration = time.time() - start_times.pop(name, time.time())
                     
@@ -160,18 +170,16 @@ async def run_case(ctx: RunnerContext, case: DatasetCase) -> EvalResult:
                         if "answer" in data:
                             final_answer = data["answer"]
                             
-                    # End step in recorder
-                    # We skip proper step ending object lookup for brevity, just getting the last one
-                    if recorder.run.steps:
-                        await recorder.end_step(recorder.run.steps[-1])
+                    step = active_steps.pop(name, None)
+                    if step is not None:
+                        await recorder.end_step(step)
                         
             # Execute gold SQL directly on DB using our app.tools.execution function
             # Since this is an eval, we want to run the gold SQL to get gold rows
             gold_rows = []
             if case.gold_sql:
-                from app.tools.execution import _run_query_internal
                 try:
-                    gold_cols, g_rows = await _run_query_internal(conn, ctx.db, case.gold_sql)
+                    _gold_cols, g_rows = await _run_eval_sql(ctx, conn, case.gold_sql)
                     gold_rows = g_rows
                 except Exception as e:
                     logging.warning(f"Failed to run gold SQL for {case.id}: {e}")
@@ -179,9 +187,8 @@ async def run_case(ctx: RunnerContext, case: DatasetCase) -> EvalResult:
             # Get predicted rows
             pred_rows = []
             if final_sql:
-                from app.tools.execution import _run_query_internal
                 try:
-                    p_cols, p_rows = await _run_query_internal(conn, ctx.db, final_sql)
+                    p_cols, p_rows = await _run_eval_sql(ctx, conn, final_sql)
                     pred_rows = p_rows
                     pred_columns = [c["name"] for c in p_cols]
                     pred_row_count = len(p_rows)
@@ -204,8 +211,11 @@ async def run_case(ctx: RunnerContext, case: DatasetCase) -> EvalResult:
                 reason = "Not implemented routing check"
 
             # Tokens & Cost from run
-            tokens = sum(s.tokens for s in recorder.run.steps)
-            cost = sum(s.cost for s in recorder.run.steps)
+            steps = (
+                await ctx.db.scalars(select(RunStep).where(RunStep.run_id == recorder.run_id))
+            ).all()
+            tokens = sum(step.tokens for step in steps)
+            cost = sum(step.cost for step in steps)
             
             return EvalResult(
                 case_id=case.id,

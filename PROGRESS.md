@@ -52,7 +52,7 @@
 | S6.5 | DONE | pending | Deterministic empty/all-null/truncation verification routes failures through shared repair budget. |
 | S6.6 | DONE | pending | Pure deterministic chart selection and chart spec included in final response. |
 | S6.7 | DONE | pending | Optional structured planner behind PLANNER_ENABLED; disabled by default. |
-| S6.8 | IN PROGRESS | pending | The evaluator had no usable configs, referenced a nonexistent settings field, and used placeholder target credentials. It now uses encrypted local read-only demo credentials, correct ports, per-case conversations, and metadata sync; validate the one-case dev path before adding measured ablations. |
+| S6.8 | IN PROGRESS | pending | The evaluator now uses encrypted local read-only demo credentials, correct ports, per-case conversations, metadata sync, a Windows-compatible event loop, production SQL validation/execution, and redacted HTTP-client logs. One-case validation reached Gemini and target validation; remaining fixes are RunStep token accounting and gold-query validation for sensitive-table wildcards before ablation configs/reports. |
 | S7.1 | DONE | pending | Next.js scaffold, typed API client, Vitest, same-origin proxy, and register/login UI; frontend gate passed. |
 | S7.2 | DONE | pending | Connections list/create/status UI with safe error display; frontend gate passed. |
 | S7.3 | DONE | pending | Chat page consumes query SSE with fetch streaming and presents live event state; frontend gate passed. |
@@ -95,7 +95,7 @@
 
 ## Known Issues / Blockers
 - Docker Hub credentials are configured. Authenticated Docker Hub token requests timed out through all bounded retries for the database jobs; wait for registry recovery, then rerun CI.
-- Local evaluator test invocation is blocked by Windows pytest temporary-directory permissions; Ruff also reports pre-existing formatting debt in evaluator files. Validate the repaired live one-case path separately before formatting the wider evaluator module.
+- Evaluator unit tests pass when using a workspace-local pytest temp directory. Live schema sync exposed psycopg's Windows Proactor-loop incompatibility; the evaluator CLI now uses SelectorEventLoop and needs one-case revalidation. Ruff still reports pre-existing formatting debt in evaluator files.
 - gh CLI not installed — blocks S0.3 (GitHub remote creation). Will guide human to install when we reach that step.
 - Docker Desktop not installed — blocks S0.6 (Docker Compose). Will guide human to install when we reach that step.
 
