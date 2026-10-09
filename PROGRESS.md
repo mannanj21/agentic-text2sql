@@ -1,11 +1,11 @@
 # PROGRESS
 
 ## Current
-- Stage: 7 (Frontend) | Step: S7.4 | Status: IN PROGRESS
+- Stage: 7 (Frontend) | Step: S7.5 | Status: IN PROGRESS
 - Branch: stage/6-retrieval-routing-ablations
-- Last commit: pending S7.3 chat streaming checkpoint
+- Last commit: pending S7.4 trace/history checkpoint
 - Active model: Codex (GPT-5)
-- Next action: Implement trace view and history; S6.8 remains blocked on live eval inputs.
+- Next action: Implement schema and glossary editor; S6.8 remains blocked on live eval inputs.
 
 ## Step Checklist
 | Step | Status | Commit | Notes |
@@ -56,7 +56,7 @@
 | S7.1 | DONE | pending | Next.js scaffold, typed API client, Vitest, same-origin proxy, and register/login UI; frontend gate passed. |
 | S7.2 | DONE | pending | Connections list/create/status UI with safe error display; frontend gate passed. |
 | S7.3 | DONE | pending | Chat page consumes query SSE with fetch streaming and presents live event state; frontend gate passed. |
-| S7.4 | TODO | — | Trace view and history |
+| S7.4 | DONE | pending | History and run-trace pages reopen persisted results without re-executing; frontend gate passed. |
 | S7.5 | TODO | — | Schema/glossary editor |
 | S7.6 | TODO | — | E2E tests |
 | S8.1 | TODO | — | Rate limiting |
