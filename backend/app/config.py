@@ -66,6 +66,7 @@ class Settings(BaseSettings):
 
     # --- Rate Limiting ---
     RATE_LIMIT_PER_MIN: int = 30
+    LOGIN_RATE_LIMIT_PER_MIN: int = 10
     MAX_QUESTION_LENGTH: int = 2000  # characters; enforced by input_guard before LLM call
 
     # --- Enrichment ---

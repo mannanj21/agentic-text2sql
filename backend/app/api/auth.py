@@ -10,6 +10,7 @@ from app.auth import create_access_token, hash_password, verify_password
 from app.config import get_settings
 from app.database.core import get_db
 from app.database.models import User
+from app.rate_limit import enforce_login_rate_limit
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -67,6 +68,14 @@ async def login(
     except EmailNotValidError:
         raise HTTPException(status_code=401, detail="Invalid credentials") from None
 
+    settings = get_settings()
+    await enforce_login_rate_limit(
+        db,
+        normalized_email,
+        settings.SESSION_SECRET.get_secret_value(),
+        settings.LOGIN_RATE_LIMIT_PER_MIN,
+    )
+
     result = await db.execute(select(User).where(User.email == normalized_email))
     user = result.scalars().first()
 
@@ -82,7 +91,7 @@ async def login(
         value=token,
         httponly=True,
         samesite="lax",
-        secure=get_settings().APP_ENV == "production",
+        secure=settings.APP_ENV == "production",
         max_age=7 * 24 * 3600,
     )
 

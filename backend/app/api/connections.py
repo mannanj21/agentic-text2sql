@@ -13,6 +13,7 @@ from app.database.core import get_db
 from app.database.crypto import CredentialCipher
 from app.database.models import Connection, User
 from app.guardrails.ssrf import UnsafeTargetError, resolve_target
+from app.rate_limit import enforce_rate_limit
 from app.tools.introspection import (
     SchemaIntrospectionError,
     TargetConnectionError,
@@ -111,6 +112,7 @@ async def _owned_connection(connection_id: str, user_id: str, db: AsyncSession) 
 async def create_connection(
     request: ConnectionCreateRequest, user: CurrentUser, db: DbSession
 ) -> ConnectionResponse:
+    await enforce_rate_limit(db, user.id, get_settings().RATE_LIMIT_PER_MIN)
     encrypted_password = await _verify_connection_request(request)
     connection = Connection(
         user_id=user.id,
@@ -151,6 +153,7 @@ async def sync_connection(
     connection_id: str, user: CurrentUser, db: DbSession
 ) -> ConnectionResponse:
     """Synchronize the stored target schema after the ownership check."""
+    await enforce_rate_limit(db, user.id, get_settings().RATE_LIMIT_PER_MIN)
     connection = await _owned_connection(connection_id, user.id, db)
     try:
         await sync_schema_metadata(connection, db)

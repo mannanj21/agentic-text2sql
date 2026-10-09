@@ -11,9 +11,7 @@ async def test_contextualize_uses_fast_router_response() -> None:
             ]
         }
     )
-    result = await contextualize_node(
-        {"question": "and last month?", "history": []}, llm=llm
-    )
+    result = await contextualize_node({"question": "and last month?", "history": []}, llm=llm)
     assert result["intent"] == "DATABASE_QUERY"
     assert result["standalone_question"] == "sales last month"
 

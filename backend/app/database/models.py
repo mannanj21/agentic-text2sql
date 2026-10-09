@@ -303,3 +303,15 @@ class RateLimit(Base):
         DateTime(timezone=True), primary_key=True
     )
     count: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+
+
+class LoginRateLimit(Base):
+    """Fixed-window login counter keyed by a keyed digest, never a raw email address."""
+
+    __tablename__ = "login_rate_limits"
+
+    subject_digest: Mapped[str] = mapped_column(String(64), primary_key=True)
+    window_start: Mapped[datetime.datetime] = mapped_column(
+        DateTime(timezone=True), primary_key=True
+    )
+    count: Mapped[int] = mapped_column(Integer, nullable=False, default=1)

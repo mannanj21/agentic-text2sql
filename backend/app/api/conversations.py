@@ -20,6 +20,7 @@ from app.database.core import AsyncSessionLocal, get_db
 from app.database.models import Connection, Conversation, Message, Run, RunStep, User
 from app.llm.client import LLMClient
 from app.persistence.tracing import RunRecorder
+from app.rate_limit import enforce_rate_limit
 
 router = APIRouter(tags=["Conversations"])
 CurrentUser = Annotated[User, Depends(current_user)]
@@ -376,6 +377,7 @@ async def query_conversation(
     stream: bool = True,
 ) -> Any:
     """Run a text-to-SQL query in a conversation."""
+    await enforce_rate_limit(db, user.id, settings.RATE_LIMIT_PER_MIN)
     conv = await _owned_conversation(conversation_id, user.id, db)
     await _owned_connection(conv.connection_id, user.id, db)
 
