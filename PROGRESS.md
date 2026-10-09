@@ -1,11 +1,11 @@
 # PROGRESS
 
 ## Current
-- Stage: 8 (Hardening) | Step: S8.5 | Status: IN PROGRESS
+- Stage: 8 (Hardening) | Step: S8.6 | Status: IN PROGRESS
 - Branch: stage/6-retrieval-routing-ablations
-- Last commit: pending S8.5 platform load-test checkpoint
+- Last commit: pending S8.6 CI expansion checkpoint
 - Active model: Codex (GPT-5)
-- Next action: Extend load scenarios to real query lifecycle under a deterministic fake-LLM deployment mode, then run a longer measured pass. S6.8 remains blocked on live eval inputs; S7.6 needs deterministic fake-LLM browser scenarios.
+- Next action: Add CI integration/security jobs with seeded demo services. S8.5 optional real-LLM run and S6.8 live eval remain deferred; S7.6 needs deterministic fake-LLM browser scenarios.
 
 ## Step Checklist
 | Step | Status | Commit | Notes |
@@ -64,7 +64,7 @@
 | S8.3 | DONE | pending | Worst-case FakeLLM SQL injection cannot reach executor; hostile result cells remain prompt-delimited and answer generation has no execution tool. Security suite: 85 passing. |
 | S8.4 | DONE | pending | One-shot migration, api-1/api-2 behind SSE-safe nginx, replica headers, routing, authenticated SSE delivery, cross-replica continuation, and recoverable one-replica failover are locally verified. |
 | S8.5 | IN PROGRESS | pending | Locust platform mode now includes deterministic fake-LLM query lifecycle. Measured baselines include a 5-user/20-second mixed run (157 requests, 0 failures; seven SSE queries, 380 ms p95). Optional real-LLM run remains. |
-| S8.6 | TODO | — | Complete CI |
+| S8.6 | IN PROGRESS | pending | CI now includes frontend lint/type/unit/build plus Playwright page E2E, and a Postgres-backed authz matrix job. Seeded demo integration/security and manual eval jobs remain. |
 | S9.1 | TODO | — | README |
 | S9.2 | TODO | — | design.md |
 | S9.3 | TODO | — | security.md |

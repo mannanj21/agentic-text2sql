@@ -62,3 +62,53 @@ jobs:
         run: cd backend && uv sync --all-extras
       - name: Run Unit Tests
         run: cd backend && uv run pytest tests/unit -x -q --tb=short
+
+  frontend:
+    name: Frontend Checks and E2E
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install dependencies
+        run: cd frontend && npm ci
+      - name: Lint, typecheck, unit tests, and build
+        run: cd frontend && npm run lint && npm run typecheck && npm run test && npm run build
+      - name: Install Playwright browser
+        run: cd frontend && npx playwright install --with-deps chromium
+      - name: Run page E2E tests
+        run: cd frontend && npm run dev -- --hostname 127.0.0.1 > vite-ci.log 2>&1 & npx wait-on http://127.0.0.1:3000 && npx playwright test
+
+  authz:
+    name: Authorization Matrix
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: test_db
+        ports: ["5433:5432"]
+        options: >-
+          --health-cmd "pg_isready -U test_user -d test_db"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      APP_ENV: test
+      DATABASE_URL: postgresql+psycopg://test_user:test_password@localhost:5433/test_db
+      ENCRYPTION_KEY: 6BNEM3TxcyxQ0VJt7MoJSz1PRfudYCZTEtjkpAW0exQ=
+      SESSION_SECRET: ci-session-secret-not-production
+      LLM_PROVIDER: fake
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies and migrate
+        run: cd backend && uv sync --all-extras && uv run alembic upgrade head
+      - name: Run authorization matrix
+        run: cd backend && uv run pytest tests/authz -q --tb=short
