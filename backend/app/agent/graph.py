@@ -18,6 +18,7 @@ from typing import Any, Literal, TypedDict
 from langgraph.graph import END, StateGraph
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.agent.contextualize import contextualize
 from app.agent.nodes import (
     AnswerOutput,
     GenerateOutput,
@@ -28,12 +29,14 @@ from app.agent.nodes import (
     run_generate_node,
     run_repair_node,
 )
+from app.agent.schema_renderer import render_schema_ddl
 from app.config import get_settings
 from app.database.models import Connection
 from app.guardrails.input_guard import GuardrailError, check_input
 from app.guardrails.sql_validator import ValidationError, rewrap_validated, validate_sql
 from app.llm.client import FakeLLM, LLMClient, LLMProviderError, TokenUsage
 from app.tools.execution import ExecutionError, ExecutionResult, execute
+from app.tools.retrieval import retrieve_schema
 
 # ---------------------------------------------------------------------------
 # Graph state (serializable — NO credentials, NO raw rows beyond preview cap)
@@ -59,6 +62,10 @@ class AgentState(TypedDict, total=False):
     dialect: str
     current_date: str
     glossary: str
+    history: list[dict[str, str]]
+    intent: str
+    standalone_question: str
+    clarification: str
     retrieved_schema_ids: list[str]
     retrieval_latency_ms: int
 
@@ -130,7 +137,7 @@ async def generate_node(state: dict[str, Any], *, llm: FakeLLM | LLMClient) -> d
         usage: TokenUsage
         result, usage = await run_generate_node(
             llm=llm,
-            question=state["question"],
+            question=state.get("standalone_question") or state["question"],
             schema_ddl=state["schema_ddl"],
             dialect=state.get("dialect", "postgresql"),
             current_date=state.get("current_date") or datetime.date.today().isoformat(),
@@ -149,6 +156,40 @@ async def generate_node(state: dict[str, Any], *, llm: FakeLLM | LLMClient) -> d
         "total_tokens": state.get("total_tokens", 0) + usage.total_tokens,
         "total_cost": state.get("total_cost", 0.0) + usage.cost_usd,
     }
+
+
+async def contextualize_node(state: dict[str, Any], *, llm: FakeLLM | LLMClient) -> dict[str, Any]:
+    try:
+        result, usage = await contextualize(
+            llm, state["question"], state.get("history", []), state.get("current_date")
+        )
+    except LLMProviderError:
+        return {"intent": "DATABASE_QUERY", "standalone_question": state["question"]}
+    return {
+        "intent": result.intent,
+        "standalone_question": result.standalone_question,
+        "clarification": result.clarification or "",
+        "total_tokens": state.get("total_tokens", 0) + usage.total_tokens,
+        "total_cost": state.get("total_cost", 0.0) + usage.cost_usd,
+    }
+
+
+async def retrieve_node(state: dict[str, Any], *, db: AsyncSession) -> dict[str, Any]:
+    # Existing callers/tests may already have a vetted schema context.
+    if state.get("schema_ddl"):
+        return {}
+    result = await retrieve_schema(db, state["connection_id"], state["standalone_question"])
+    return {
+        "schema_ddl": result.ddl,
+        "retrieved_schema_ids": result.table_ids,
+        "retrieval_latency_ms": result.latency_ms,
+    }
+
+
+async def schema_context_node(
+    state: dict[str, Any], *, connection: Connection, db: AsyncSession
+) -> dict[str, Any]:
+    return {"schema_ddl": await render_schema_ddl(connection, db)}
 
 
 async def validate_node(
@@ -340,7 +381,26 @@ async def answer_node(state: dict[str, Any], *, llm: FakeLLM | LLMClient) -> dic
 
 
 def _route_after_guardrail(state: dict[str, Any]) -> str:
-    return "generate" if state.get("status") != "failed" else END
+    return "contextualize" if state.get("status") != "failed" else END
+
+
+def _route_after_contextualize(state: dict[str, Any]) -> str:
+    if state.get("intent") == "DATABASE_QUERY":
+        return "retrieve"
+    if state.get("intent") == "SCHEMA_QUESTION":
+        return "schema_context"
+    return "intent_answer"
+
+
+async def intent_answer_node(state: dict[str, Any]) -> dict[str, Any]:
+    intent = state.get("intent")
+    if intent == "CLARIFICATION_REQUIRED":
+        answer = state.get("clarification") or "Could you clarify what you mean?"
+    elif intent == "SCHEMA_QUESTION":
+        answer = state.get("schema_ddl") or "No schema metadata is available."
+    else:
+        answer = "I can help with questions about the connected database, but not that request."
+    return {"answer": answer, "answer_assumptions": [], "status": "completed"}
 
 
 def _route_after_generate(state: dict[str, Any]) -> str:
@@ -408,6 +468,15 @@ def build_graph(
     async def _generate(state: dict[str, Any]) -> dict[str, Any]:
         return await generate_node(state, llm=llm)
 
+    async def _contextualize(state: dict[str, Any]) -> dict[str, Any]:
+        return await contextualize_node(state, llm=llm)
+
+    async def _retrieve(state: dict[str, Any]) -> dict[str, Any]:
+        return await retrieve_node(state, db=db)
+
+    async def _schema_context(state: dict[str, Any]) -> dict[str, Any]:
+        return await schema_context_node(state, connection=connection, db=db)
+
     async def _validate(state: dict[str, Any]) -> dict[str, Any]:
         return await validate_node(state, connection=connection, db=db)
 
@@ -423,6 +492,10 @@ def build_graph(
     builder: Any = StateGraph(AgentState)
     builder.add_node("guardrail", _guardrail)
     builder.add_node("generate", _generate)
+    builder.add_node("contextualize", _contextualize)
+    builder.add_node("retrieve", _retrieve)
+    builder.add_node("schema_context", _schema_context)
+    builder.add_node("intent_answer", intent_answer_node)
     builder.add_node("validate", _validate)
     builder.add_node("execute", _execute)
     builder.add_node("repair", _repair)
@@ -430,8 +503,20 @@ def build_graph(
 
     builder.set_entry_point("guardrail")
     builder.add_conditional_edges(
-        "guardrail", _route_after_guardrail, {"generate": "generate", END: END}
+        "guardrail", _route_after_guardrail, {"contextualize": "contextualize", END: END}
     )
+    builder.add_conditional_edges(
+        "contextualize",
+        _route_after_contextualize,
+        {
+            "retrieve": "retrieve",
+            "schema_context": "schema_context",
+            "intent_answer": "intent_answer",
+        },
+    )
+    builder.add_edge("retrieve", "generate")
+    builder.add_edge("schema_context", "intent_answer")
+    builder.add_edge("intent_answer", END)
     builder.add_conditional_edges(
         "generate", _route_after_generate, {"validate": "validate", END: END}
     )

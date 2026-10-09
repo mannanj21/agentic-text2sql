@@ -20,7 +20,6 @@ from app.database.core import AsyncSessionLocal, get_db
 from app.database.models import Connection, Conversation, Message, Run, RunStep, User
 from app.llm.client import LLMClient
 from app.persistence.tracing import RunRecorder
-from app.tools.retrieval import retrieve_schema
 
 router = APIRouter(tags=["Conversations"])
 CurrentUser = Annotated[User, Depends(current_user)]
@@ -259,6 +258,9 @@ async def background_run_graph(
 
                     if name not in {
                         "guardrail",
+                        "contextualize",
+                        "retrieve",
+                        "schema_context",
                         "generate",
                         "validate",
                         "execute",
@@ -309,6 +311,8 @@ async def background_run_graph(
                 run = recorder.run
                 assert run is not None
                 run.final_sql = final_state.get("validated_sql") or final_state.get("generated_sql")
+                run.intent = final_state.get("intent")
+                run.standalone_question = final_state.get("standalone_question")
                 run.result_meta = {
                     "answer": final_state.get("answer"),
                     "assumptions": final_state.get("answer_assumptions", []),
@@ -370,9 +374,24 @@ async def query_conversation(
 ) -> Any:
     """Run a text-to-SQL query in a conversation."""
     conv = await _owned_conversation(conversation_id, user.id, db)
-    connection = await _owned_connection(conv.connection_id, user.id, db)
+    await _owned_connection(conv.connection_id, user.id, db)
 
-    retrieved = await retrieve_schema(db, connection.id, body.question)
+    history_runs = (
+        await db.scalars(
+            select(Run)
+            .where(Run.conversation_id == conversation_id, Run.user_id == user.id)
+            .order_by(Run.id.desc())
+            .limit(settings.HISTORY_TURNS)
+        )
+    ).all()
+    history = [
+        {
+            "question": run.question,
+            "sql": run.final_sql or "",
+            "answer_summary": str((run.result_meta or {}).get("answer", ""))[:500],
+        }
+        for run in reversed(history_runs)
+    ]
 
     user_msg = Message(
         conversation_id=conversation_id,
@@ -387,9 +406,8 @@ async def query_conversation(
         "connection_id": conv.connection_id,
         "conversation_id": conversation_id,
         "user_id": user.id,
-        "schema_ddl": retrieved.ddl,
-        "retrieved_schema_ids": retrieved.table_ids,
-        "retrieval_latency_ms": retrieved.latency_ms,
+        "schema_ddl": "",
+        "history": history,
         "dialect": "postgresql",
         "current_date": datetime.date.today().isoformat(),
         "glossary": "",
