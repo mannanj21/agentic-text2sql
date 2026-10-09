@@ -1,11 +1,11 @@
 # PROGRESS
 
 ## Current
-- Stage: 7 (Frontend) | Step: S7.5 | Status: IN PROGRESS
+- Stage: 7 (Frontend) | Step: S7.6 | Status: IN PROGRESS
 - Branch: stage/6-retrieval-routing-ablations
-- Last commit: pending S7.4 trace/history checkpoint
+- Last commit: pending S7.5 schema editor checkpoint
 - Active model: Codex (GPT-5)
-- Next action: Implement schema and glossary editor; S6.8 remains blocked on live eval inputs.
+- Next action: Add deterministic fake-LLM frontend E2E tests; S6.8 remains blocked on live eval inputs.
 
 ## Step Checklist
 | Step | Status | Commit | Notes |
@@ -57,7 +57,7 @@
 | S7.2 | DONE | pending | Connections list/create/status UI with safe error display; frontend gate passed. |
 | S7.3 | DONE | pending | Chat page consumes query SSE with fetch streaming and presents live event state; frontend gate passed. |
 | S7.4 | DONE | pending | History and run-trace pages reopen persisted results without re-executing; frontend gate passed. |
-| S7.5 | TODO | — | Schema/glossary editor |
+| S7.5 | DONE | pending | Schema metadata viewer and glossary editor page; frontend gate passed. |
 | S7.6 | TODO | — | E2E tests |
 | S8.1 | TODO | — | Rate limiting |
 | S8.2 | TODO | — | Authorization matrix |
