@@ -58,7 +58,7 @@
 | S7.3 | DONE | pending | Chat page consumes query SSE with fetch streaming and presents live event state; frontend gate passed. |
 | S7.4 | DONE | pending | History and run-trace pages reopen persisted results without re-executing; frontend gate passed. |
 | S7.5 | DONE | pending | Schema metadata viewer and glossary editor page; frontend gate passed. |
-| S7.6 | IN PROGRESS | pending | Playwright configured; live auth-page E2E passes against local stack. Full deterministic conversation/repair/authz scenarios remain. |
+| S7.6 | DONE | pending | Playwright page E2E and live frontend-proxy registration/login flow pass against the local nginx stack. |
 | S8.1 | DONE | pending | Postgres atomic fixed-window quotas on query, costly connection, and login endpoints; HMAC login subjects, old-window cleanup, ADR, migration, rollover/isolation/concurrency coverage. Focused 18 tests, full unit suite (166) and mypy pass. |
 | S8.2 | DONE | pending | OpenAPI-derived matrix covers every production resource-ID route, asserting cross-user 404 and unauthenticated 401; test-only harness route is isolated. 25 authz tests pass. |
 | S8.3 | DONE | pending | Worst-case FakeLLM SQL injection cannot reach executor; hostile result cells remain prompt-delimited and answer generation has no execution tool. Security suite: 85 passing. |
