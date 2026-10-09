@@ -19,10 +19,12 @@ from evaluation.validate_dataset import DatasetCase
 # We import backend modules natively for eval execution.
 from app.config import Settings
 from app.database.core import AsyncSessionLocal
-from app.database.models import Connection, Run, User
+from app.database.crypto import CredentialCipher
+from app.database.models import Connection, Conversation, Run, User
 from app.agent.graph import build_graph
 from app.llm.client import LLMClient
 from app.persistence.tracing import RunRecorder
+from app.tools.introspection import sync_schema_metadata
 from sqlalchemy import select
 
 
@@ -46,25 +48,41 @@ async def setup_eval_context(settings: Settings) -> RunnerContext:
         await db.commit()
         await db.refresh(user)
 
-    # Ensure connections exist (we assume target dbs are local for eval)
-    # The passwords should match the local setup or be fake if mocked.
+    # Evaluations run only against the local, seeded, read-only demo targets.
+    # Store the password with the normal app cipher; it is never reported.
+    cipher = CredentialCipher(settings.ENCRYPTION_KEY)
+    targets = {
+        "ecommerce": {"port": 5434, "username": "readonly_demo", "password": "readonly_pass"},
+        "pagila": {"port": 5435, "username": "readonly_demo", "password": "readonly_pass"},
+    }
     connections = {}
-    for db_name in ["ecommerce", "pagila"]:
+    for db_name, target in targets.items():
         conn = await db.scalar(select(Connection).where(Connection.name == f"eval_{db_name}"))
         if not conn:
             conn = Connection(
                 user_id=user.id,
                 name=f"eval_{db_name}",
                 host="localhost",
-                port=5432,
+                port=target["port"],
                 database=db_name,
-                username="postgres",
-                encrypted_password="dummy",  # Mocked out in tests or set to real encrypted
+                username=target["username"],
+                encrypted_password=cipher.encrypt(target["password"]),
                 allowed_schemas=["public"],
+                status="ready",
             )
             db.add(conn)
             await db.commit()
             await db.refresh(conn)
+        else:
+            conn.host = "localhost"
+            conn.port = target["port"]
+            conn.database = db_name
+            conn.username = target["username"]
+            conn.encrypted_password = cipher.encrypt(target["password"])
+            conn.allowed_schemas = ["public"]
+            conn.status = "ready"
+            await db.commit()
+        await sync_schema_metadata(conn, db)
         connections[db_name] = conn
 
     llm = LLMClient(settings)
@@ -75,9 +93,18 @@ async def run_case(ctx: RunnerContext, case: DatasetCase) -> EvalResult:
     """Run a single evaluation case through the graph and return the result metrics."""
     conn = ctx.connections[case.db]
     
+    conv_id = f"eval-{case.id}"
+    conversation = await ctx.db.get(Conversation, conv_id)
+    if conversation is None:
+        ctx.db.add(Conversation(id=conv_id, user_id=ctx.user.id, connection_id=conn.id, title="eval"))
+        await ctx.db.commit()
+
     initial_state = {
         "question": case.question,
         "history": [],
+        "connection_id": conn.id,
+        "conversation_id": conv_id,
+        "user_id": ctx.user.id,
     }
     
     latency = {"llm": 0.0, "db": 0.0, "other": 0.0}
@@ -88,9 +115,6 @@ async def run_case(ctx: RunnerContext, case: DatasetCase) -> EvalResult:
     pred_columns = []
     pred_row_count = 0
     error_msg = None
-    
-    # Re-use conversation_id = "eval-conv" to simplify
-    conv_id = f"eval-{case.id}"
     
     try:
         async with RunRecorder(

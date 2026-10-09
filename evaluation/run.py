@@ -88,7 +88,7 @@ async def async_main() -> None:
             "is_dirty": is_git_dirty(),
             "split": args.split,
             "config": args.config,
-            "models": {"llm": settings.llm_model},
+            "models": {"llm": settings.FAST_MODEL},
         },
         "metrics": report.as_dict(),
         "cases": [
@@ -116,7 +116,7 @@ async def async_main() -> None:
         "",
         f"**Date:** {timestamp}  ",
         f"**Commit:** {git_sha}{' (dirty)' if is_git_dirty() else ''}  ",
-        f"**Model:** {settings.llm_model}  ",
+        f"**Model:** {settings.FAST_MODEL}  ",
         "",
         "## Metrics",
         "",

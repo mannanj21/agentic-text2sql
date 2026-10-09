@@ -3,9 +3,9 @@
 ## Current
 - Stage: 8 (Hardening) | Step: S8.6 | Status: IN PROGRESS
 - Branch: stage/6-retrieval-routing-ablations
-- Last commit: S8.6 CI authentication and bounded registry retries are configured; Docker Hub token-endpoint availability is the current external blocker
+- Last commit: S6.8 evaluator repair is in progress; local evaluation now uses encrypted read-only demo connections and schema synchronization, pending a one-case validation
 - Active model: Codex (GPT-5)
-- Next action: Rerun CI after Docker Hub token-service recovery, then complete S6.8 retrieval/routing ablations before the Stage 8 exit.
+- Next action: Validate one dev evaluation case after the evaluator repair, add ablation configs/reports, and rerun CI after Docker Hub token-service recovery.
 
 ## Step Checklist
 | Step | Status | Commit | Notes |
@@ -52,7 +52,7 @@
 | S6.5 | DONE | pending | Deterministic empty/all-null/truncation verification routes failures through shared repair budget. |
 | S6.6 | DONE | pending | Pure deterministic chart selection and chart spec included in final response. |
 | S6.7 | DONE | pending | Optional structured planner behind PLANNER_ENABLED; disabled by default. |
-| S6.8 | TODO | — | Ablations |
+| S6.8 | IN PROGRESS | pending | The evaluator had no usable configs, referenced a nonexistent settings field, and used placeholder target credentials. It now uses encrypted local read-only demo credentials, correct ports, per-case conversations, and metadata sync; validate the one-case dev path before adding measured ablations. |
 | S7.1 | DONE | pending | Next.js scaffold, typed API client, Vitest, same-origin proxy, and register/login UI; frontend gate passed. |
 | S7.2 | DONE | pending | Connections list/create/status UI with safe error display; frontend gate passed. |
 | S7.3 | DONE | pending | Chat page consumes query SSE with fetch streaming and presents live event state; frontend gate passed. |
@@ -95,6 +95,7 @@
 
 ## Known Issues / Blockers
 - Docker Hub credentials are configured. Authenticated Docker Hub token requests timed out through all bounded retries for the database jobs; wait for registry recovery, then rerun CI.
+- Local evaluator test invocation is blocked by Windows pytest temporary-directory permissions; Ruff also reports pre-existing formatting debt in evaluator files. Validate the repaired live one-case path separately before formatting the wider evaluator module.
 - gh CLI not installed — blocks S0.3 (GitHub remote creation). Will guide human to install when we reach that step.
 - Docker Desktop not installed — blocks S0.6 (Docker Compose). Will guide human to install when we reach that step.
 
