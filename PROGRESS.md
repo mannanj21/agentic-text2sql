@@ -5,7 +5,7 @@
 - Branch: stage/6-retrieval-routing-ablations
 - Last commit: S8.6 CI authentication and bounded registry retries are configured; Docker Hub token-endpoint availability is the current external blocker
 - Active model: Codex (GPT-5)
-- Next action: Configure Docker Hub repository secrets and rerun CI. S8.5 optional real-LLM run and S6.8 live eval remain deferred.
+- Next action: Rerun CI after Docker Hub token-service recovery, then complete S6.8 retrieval/routing ablations before the Stage 8 exit.
 
 ## Step Checklist
 | Step | Status | Commit | Notes |
@@ -63,7 +63,7 @@
 | S8.2 | DONE | pending | OpenAPI-derived matrix covers every production resource-ID route, asserting cross-user 404 and unauthenticated 401; test-only harness route is isolated. 25 authz tests pass. |
 | S8.3 | DONE | pending | Worst-case FakeLLM SQL injection cannot reach executor; hostile result cells remain prompt-delimited and answer generation has no execution tool. Security suite: 85 passing. |
 | S8.4 | DONE | pending | One-shot migration, api-1/api-2 behind SSE-safe nginx, replica headers, routing, authenticated SSE delivery, cross-replica continuation, and recoverable one-replica failover are locally verified. |
-| S8.5 | IN PROGRESS | pending | Locust platform mode now includes deterministic fake-LLM query lifecycle. Measured baselines include a 5-user/20-second mixed run (157 requests, 0 failures; seven SSE queries, 380 ms p95). Optional real-LLM run remains. |
+| S8.5 | DONE | pending | Locust platform/fake baseline plus a quota-bounded real-Gemini smoke are measured in `docs/loadtest.md`. The real run: one user/20 seconds, 25 requests, zero failures, and one real SSE query at 3,799 ms; explicitly documented as a latency sample, not a capacity claim. |
 | S8.6 | IN PROGRESS | pending | CI covers secret scan, backend lint/type/unit, Postgres authz matrix, frontend lint/type/unit/build, Playwright page E2E, and a seeded-demo security suite. Docker Hub credentials are confirmed available; bounded retries cover authenticated login and Compose startup. In the latest run, all non-database jobs passed, but Docker Hub's token endpoint timed out through all retries for the database jobs; rerun after registry recovery. Manual eval remains deferred because the runner assumes local target DBs. |
 | S9.1 | TODO | — | README |
 | S9.2 | TODO | — | design.md |

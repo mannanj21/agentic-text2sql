@@ -37,3 +37,21 @@ A second deterministic mixed run used five users for 20 seconds. It completed
 157 requests with zero failures, including seven SSE query requests; SSE query
 p95 was 380 ms. The scenario included login, demo-connection and conversation
 creation, read endpoints, and fake-provider query streaming.
+
+## Measured real-provider smoke
+
+On 2026-10-10, a quota-bounded real-Gemini smoke run used the configured
+`backend/.env` provider with the base local Docker stack (nginx, two API
+replicas, app Postgres, and the ecommerce demo database). Locust 2.46.7 ran one
+user for 20 seconds, ramping at one user/second, on Windows 11. Hardware details
+were not collected because the host denied the read-only system-information
+query; this is therefore a functional latency sample, not a capacity claim.
+
+The run completed 25 requests with zero failures (1.50 requests/s). It included
+one full real-LLM SSE query at 3,799 ms (and therefore p95 3,800 ms for that
+single request). Aggregate average latency was 166 ms; aggregate p95 was 110 ms
+because most requests were inexpensive authenticated reads. Database-pool
+saturation was not measured. The primary observed bottleneck was provider and
+agent-chain latency, so future scale work should prioritize a queue for long
+queries, per-tenant limits, retrieval caching, and pool instrumentation before
+raising concurrency.
