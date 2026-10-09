@@ -62,7 +62,7 @@
 | S8.1 | DONE | pending | Postgres atomic fixed-window quotas on query, costly connection, and login endpoints; HMAC login subjects, old-window cleanup, ADR, migration, rollover/isolation/concurrency coverage. Focused 18 tests, full unit suite (166) and mypy pass. |
 | S8.2 | DONE | pending | OpenAPI-derived matrix covers every production resource-ID route, asserting cross-user 404 and unauthenticated 401; test-only harness route is isolated. 25 authz tests pass. |
 | S8.3 | DONE | pending | Worst-case FakeLLM SQL injection cannot reach executor; hostile result cells remain prompt-delimited and answer generation has no execution tool. Security suite: 85 passing. |
-| S8.4 | IN PROGRESS | pending | Compose now runs a one-shot migration job, api-1/api-2 behind nginx with no SSE buffering and replica response headers. Local routing probe observed both replicas. SSE, continuation, and failure verification remain. |
+| S8.4 | IN PROGRESS | pending | Compose now runs a one-shot migration job, api-1/api-2 behind nginx with no SSE buffering and replica response headers. Local routing and recoverable single-replica failover probes pass. SSE and cross-replica continuation verification remain. |
 | S8.5 | TODO | — | Load test |
 | S8.6 | TODO | — | Complete CI |
 | S9.1 | TODO | — | README |
