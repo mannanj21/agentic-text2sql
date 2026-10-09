@@ -1,11 +1,11 @@
 # PROGRESS
 
 ## Current
-- Stage: 8 (Hardening) | Step: S8.4 | Status: IN PROGRESS
+- Stage: 8 (Hardening) | Step: S8.5 | Status: IN PROGRESS
 - Branch: stage/6-retrieval-routing-ablations
-- Last commit: pending S8.4 deployment-topology checkpoint
+- Last commit: pending S8.4 deployment verification checkpoint
 - Active model: Codex (GPT-5)
-- Next action: Add deterministic nginx SSE, cross-replica continuation, and single-replica failover checks. The two-replica topology and routing probe are implemented and locally verified. S6.8 remains blocked on live eval inputs; S7.6 needs deterministic fake-LLM browser scenarios.
+- Next action: Build and run the planned load test. S6.8 remains blocked on live eval inputs; S7.6 needs deterministic fake-LLM browser scenarios.
 
 ## Step Checklist
 | Step | Status | Commit | Notes |
@@ -62,7 +62,7 @@
 | S8.1 | DONE | pending | Postgres atomic fixed-window quotas on query, costly connection, and login endpoints; HMAC login subjects, old-window cleanup, ADR, migration, rollover/isolation/concurrency coverage. Focused 18 tests, full unit suite (166) and mypy pass. |
 | S8.2 | DONE | pending | OpenAPI-derived matrix covers every production resource-ID route, asserting cross-user 404 and unauthenticated 401; test-only harness route is isolated. 25 authz tests pass. |
 | S8.3 | DONE | pending | Worst-case FakeLLM SQL injection cannot reach executor; hostile result cells remain prompt-delimited and answer generation has no execution tool. Security suite: 85 passing. |
-| S8.4 | IN PROGRESS | pending | Compose now runs a one-shot migration job, api-1/api-2 behind nginx with no SSE buffering and replica response headers. Local routing and recoverable single-replica failover probes pass. SSE and cross-replica continuation verification remain. |
+| S8.4 | DONE | pending | One-shot migration, api-1/api-2 behind SSE-safe nginx, replica headers, routing, authenticated SSE delivery, cross-replica continuation, and recoverable one-replica failover are locally verified. |
 | S8.5 | TODO | — | Load test |
 | S8.6 | TODO | — | Complete CI |
 | S9.1 | TODO | — | README |
