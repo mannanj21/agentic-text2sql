@@ -32,3 +32,14 @@ input; and several PostgreSQL functions (for example `current_setting`,
 the deterministic single-statement/function rules therefore prevent these
 values or effects from reaching execution. The full corpus-boundary integration
 test classifies every blocked corpus case as database-blocked or validator-only.
+
+## Prompt-injection defense
+
+Input heuristics are deliberately treated as weak speed bumps. Structural
+controls carry the safety claim: generated SQL must pass the single-statement,
+read-only validator before the executor accepts its opaque `ValidatedSQL`
+value; the target role and read-only transaction remain a second boundary.
+Security tests use a FakeLLM that obeys a question-level attack by producing
+`DROP TABLE` and prove the executor is never called. Result-cell text is placed
+only inside `<QUERY_RESULT>` delimiters; a hostile cell may influence a bad
+natural-language answer, but the answer node has no database execution tool.
