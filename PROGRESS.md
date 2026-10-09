@@ -63,7 +63,7 @@
 | S8.2 | DONE | pending | OpenAPI-derived matrix covers every production resource-ID route, asserting cross-user 404 and unauthenticated 401; test-only harness route is isolated. 25 authz tests pass. |
 | S8.3 | DONE | pending | Worst-case FakeLLM SQL injection cannot reach executor; hostile result cells remain prompt-delimited and answer generation has no execution tool. Security suite: 85 passing. |
 | S8.4 | DONE | pending | One-shot migration, api-1/api-2 behind SSE-safe nginx, replica headers, routing, authenticated SSE delivery, cross-replica continuation, and recoverable one-replica failover are locally verified. |
-| S8.5 | IN PROGRESS | pending | Locust platform mode now includes deterministic fake-LLM query lifecycle. Measured baselines: 2-user read run (31 requests, 0 failures, 3.26 RPS) and 1-user query run (17 requests, 0 failures, 1.83 RPS; SSE average 499 ms). Longer mixed and real-LLM runs remain. |
+| S8.5 | IN PROGRESS | pending | Locust platform mode now includes deterministic fake-LLM query lifecycle. Measured baselines include a 5-user/20-second mixed run (157 requests, 0 failures; seven SSE queries, 380 ms p95). Optional real-LLM run remains. |
 | S8.6 | TODO | — | Complete CI |
 | S9.1 | TODO | — | README |
 | S9.2 | TODO | — | design.md |

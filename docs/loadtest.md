@@ -32,3 +32,8 @@ With `docker-compose.loadtest.yml` enabling the deterministic fake provider at
 17 requests with zero failures. It included two SSE query requests (499 ms
 average, 650 ms maximum); aggregate average latency was 75 ms and request rate
 was 1.83 requests/s. This remains a smoke baseline, not a capacity claim.
+
+A second deterministic mixed run used five users for 20 seconds. It completed
+157 requests with zero failures, including seven SSE query requests; SSE query
+p95 was 380 ms. The scenario included login, demo-connection and conversation
+creation, read endpoints, and fake-provider query streaming.
