@@ -58,7 +58,7 @@
 | S7.3 | DONE | pending | Chat page consumes query SSE with fetch streaming and presents live event state; frontend gate passed. |
 | S7.4 | DONE | pending | History and run-trace pages reopen persisted results without re-executing; frontend gate passed. |
 | S7.5 | DONE | pending | Schema metadata viewer and glossary editor page; frontend gate passed. |
-| S7.6 | TODO | — | E2E tests |
+| S7.6 | IN PROGRESS | pending | Playwright configured; live auth-page E2E passes against local stack. Full deterministic conversation/repair/authz scenarios remain. |
 | S8.1 | TODO | — | Rate limiting |
 | S8.2 | TODO | — | Authorization matrix |
 | S8.3 | TODO | — | Prompt-injection tests |

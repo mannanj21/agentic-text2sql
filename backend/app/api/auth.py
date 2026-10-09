@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
 from app.auth import create_access_token, hash_password, verify_password
+from app.config import get_settings
 from app.database.core import get_db
 from app.database.models import User
 
@@ -81,7 +82,7 @@ async def login(
         value=token,
         httponly=True,
         samesite="lax",
-        secure=True,  # Will be true, we rely on proxy setting or just configure it
+        secure=get_settings().APP_ENV == "production",
         max_age=7 * 24 * 3600,
     )
 
@@ -90,5 +91,10 @@ async def login(
 
 @router.post("/logout")
 async def logout(response: Response) -> dict[str, Any]:
-    response.delete_cookie(key="session", httponly=True, samesite="lax", secure=True)
+    response.delete_cookie(
+        key="session",
+        httponly=True,
+        samesite="lax",
+        secure=get_settings().APP_ENV == "production",
+    )
     return {"message": "Logged out successfully"}
