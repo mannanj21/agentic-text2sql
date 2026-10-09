@@ -45,6 +45,7 @@ def create_app() -> FastAPI:
 
         response = await call_next(request)
         response.headers["X-Request-ID"] = request_id
+        response.headers["X-Replica-ID"] = settings.REPLICA_ID
         return response
 
     # Routes

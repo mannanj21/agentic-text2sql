@@ -10,6 +10,7 @@ class Settings(BaseSettings):
 
     # --- Application ---
     APP_ENV: Literal["development", "production", "test"] = "development"
+    REPLICA_ID: str = "local"
 
     # --- App Database (Postgres with pgvector) ---
     DATABASE_URL: SecretStr
