@@ -1,11 +1,11 @@
 # PROGRESS
 
 ## Current
-- Stage: 9 (Documentation and Release) | Step: S9.6 | Status: COMPLETE
+- Stage: Post-release patch | Step: frontend container proxy | Status: IN PROGRESS
 - Branch: main (release record branch: stage/9-release-record)
-- Last commit: v1.0.0 published from merged Stage 9 release branch
+- Last commit: v1.0.0 published; fixing the Docker frontend API rewrite found during first-use walkthrough
 - Active model: Codex (GPT-5)
-- Next action: Project release complete. Before publishing any held-out accuracy claim, rerun S9.5 with a provider quota that can finish the test split.
+- Next action: Complete CI, merge, and publish the v1.0.1 frontend proxy patch. Before publishing any held-out accuracy claim, rerun S9.5 with a provider quota that can finish the test split.
 
 ## Step Checklist
 | Step | Status | Commit | Notes |
