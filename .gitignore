@@ -41,12 +41,17 @@ coverage.xml
 # Testing
 .pytest_cache/
 .mypy_cache/
+backend/.tmp-pytest/
 
 # Docker
 docker-compose.override.yml
 
 # Evaluation
 evaluation/cache/
+evaluation/reports/
+
+# Browser test artifacts (final evidence can be added explicitly if needed)
+frontend/test-results/
 
 # Security - never commit these
 *.pem
