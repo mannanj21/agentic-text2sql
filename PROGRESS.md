@@ -1,11 +1,11 @@
 # PROGRESS
 
 ## Current
-- Stage: 9 (Documentation and Release) | Step: S9.6 | Status: IN PROGRESS
+- Stage: 9 (Documentation and Release) | Step: S9.6 | Status: COMPLETE
 - Branch: stage/9-docs-release (to create before this commit)
-- Last commit: Clean-clone verification fixed and now includes the production frontend in Docker Compose
+- Last commit: Full-history secret scan passed; repository is public and ready for v1.0.0 tagging
 - Active model: Codex (GPT-5)
-- Next action: Complete the required human H6 public/private decision, then tag and publish the v1.0.0 GitHub Release. Final held-out evaluation remains explicitly deferred.
+- Next action: Tag and publish the verified public v1.0.0 release. Final held-out evaluation remains explicitly deferred.
 
 ## Step Checklist
 | Step | Status | Commit | Notes |
@@ -70,7 +70,7 @@
 | S9.3 | DONE | 07de0b0 | `docs/security.md` contains threat model, layered controls, corpus evidence, SSRF/credential handling, prompt-injection boundary, and residual risks. |
 | S9.4 | DONE | 14783df | `scripts/dod_check.py` passes; held-out evaluation and walkthrough media are explicitly deferred in README. |
 | S9.5 | DEFERRED | pending | The original held-out run was rate-limited in 13 cases; an explicitly approved token-paced replacement still rate-limited 11 cases. Neither is publicly reportable; deferred by human choice and disclosed in README/final-test.md. |
-| S9.6 | IN PROGRESS | pending | Fresh clone with temporary fake-provider configuration passed `docker compose up -d --build --wait`, `python scripts/smoke.py`, and UI HTTP 200 on port 3000. Compose now includes the frontend. Gitleaks scanned all 124 commits with no leaks after recording exact test-only false positives. Required H6 visibility choice, tag, and GitHub Release remain. |
+| S9.6 | DONE | pending | Fresh clone with temporary fake-provider configuration passed `docker compose up -d --build --wait`, `python scripts/smoke.py`, and UI HTTP 200 on port 3000. Compose now includes the frontend. Gitleaks scanned all 124 commits with no leaks after recording exact test-only false positives. H6 approved public visibility; description/topics configured; final CI run 38158071959 passed. Tag and GitHub Release are next. |
 | S9.7 | DONE | 07de0b0 | `docs/resume_bullets.md` has cited, measured-only bullets and held-out caveat. |
 
 ## Decisions Log
@@ -94,7 +94,7 @@
 - psql: MISSING (optional)
 
 ## Known Issues / Blockers
-- H6 remains: decide whether the GitHub repository stays private or becomes public before the v1.0.0 release.
+- S9.5 is explicitly deferred after both sanctioned Groq held-out attempts were rate-limited; it must be rerun before making any held-out accuracy claim.
 - Gemini returns HTTP 429 before generation even for one low-rate live evaluator case. Groq is now implemented as the alternate hosted provider; a live one-case validation is pending.
 - The local disposable test database on port 5433 has been migrated; the focused retrieval integration suite now passes (3 tests). The full backend gate remains pending the separate Windows Application Control limitation below.
 - Windows Application Control blocks the `mypy` executable invoked by `scripts/make.py check`; `python -m mypy app` succeeds through the project interpreter.
