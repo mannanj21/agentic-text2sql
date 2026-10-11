@@ -3,9 +3,9 @@
 ## Current
 - Stage: 9 (Documentation and Release) | Step: S9.6 | Status: IN PROGRESS
 - Branch: stage/9-docs-release (to create before this commit)
-- Last commit: S9 documentation now discloses the final-evaluation deferral and records the security model
+- Last commit: Clean-clone verification fixed and now includes the production frontend in Docker Compose
 - Active model: Codex (GPT-5)
-- Next action: Run clean-clone verification and full-history secret scan; final held-out evaluation is explicitly deferred.
+- Next action: Run the full-history secret scan once `gitleaks` is installed; then complete the human public/private decision and release workflow. Final held-out evaluation remains explicitly deferred.
 
 ## Step Checklist
 | Step | Status | Commit | Notes |
@@ -70,7 +70,7 @@
 | S9.3 | DONE | 07de0b0 | `docs/security.md` contains threat model, layered controls, corpus evidence, SSRF/credential handling, prompt-injection boundary, and residual risks. |
 | S9.4 | DONE | 14783df | `scripts/dod_check.py` passes; held-out evaluation and walkthrough media are explicitly deferred in README. |
 | S9.5 | DEFERRED | pending | The original held-out run was rate-limited in 13 cases; an explicitly approved token-paced replacement still rate-limited 11 cases. Neither is publicly reportable; deferred by human choice and disclosed in README/final-test.md. |
-| S9.6 | TODO | — | Clean-clone verification |
+| S9.6 | IN PROGRESS | 1442a1f | Fresh clone with temporary fake-provider configuration passed `docker compose up -d --build --wait`, `python scripts/smoke.py`, and UI HTTP 200 on port 3000. Compose now includes the frontend. Full-history `gitleaks detect`, H6 visibility choice, tag, and GitHub Release remain. |
 | S9.7 | DONE | 07de0b0 | `docs/resume_bullets.md` has cited, measured-only bullets and held-out caveat. |
 
 ## Decisions Log
@@ -94,7 +94,7 @@
 - psql: MISSING (optional)
 
 ## Known Issues / Blockers
-- Docker Hub credentials are configured. Authenticated Docker Hub token requests timed out through all bounded retries for the database jobs; wait for registry recovery, then rerun CI.
+- `gitleaks` is not installed locally, so the required full-history scan has not yet run. Installing it is a system-software action requiring human approval.
 - Gemini returns HTTP 429 before generation even for one low-rate live evaluator case. Groq is now implemented as the alternate hosted provider; a live one-case validation is pending.
 - The local disposable test database on port 5433 has been migrated; the focused retrieval integration suite now passes (3 tests). The full backend gate remains pending the separate Windows Application Control limitation below.
 - Windows Application Control blocks the `mypy` executable invoked by `scripts/make.py check`; `python -m mypy app` succeeds through the project interpreter.
