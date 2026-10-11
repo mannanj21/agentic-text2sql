@@ -42,7 +42,7 @@ app database; target credentials and result rows are never put in graph state.
    docker compose up -d --build --wait
    ```
 
-3. Open `http://localhost:8000`, register, choose a seeded demo connection,
+3. Open `http://localhost:3000`, register, choose a seeded demo connection,
    and ask a question such as “How many customers are registered?”.
 
 For a local Docker demo, set `ALLOW_PRIVATE_HOSTS=true`; leave it false in any

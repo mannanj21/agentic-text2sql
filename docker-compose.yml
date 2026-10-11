@@ -75,6 +75,21 @@ services:
       timeout: 3s
       retries: 10
 
+  frontend:
+    build: ./frontend
+    environment:
+      BACKEND_URL: http://nginx
+    ports:
+      - "3000:3000"
+    depends_on:
+      nginx:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/ >/dev/null"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   demo-ecommerce:
     image: postgres:16
     container_name: agentic-demo-ecommerce
