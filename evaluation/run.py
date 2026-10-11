@@ -10,6 +10,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+import yaml
+
 from app.config import Settings
 from evaluation.metrics import compute_metrics
 from evaluation.runner import run_case, setup_eval_context
@@ -36,6 +38,20 @@ def is_git_dirty() -> bool:
         return False
 
 
+def apply_config(path_arg: str) -> Path:
+    """Load explicit evaluation environment overrides before Settings is built."""
+    path = Path(path_arg)
+    if not path.is_absolute():
+        path = Path(__file__).resolve().parent / path
+    data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    overrides = data.get("environment", {})
+    if not isinstance(overrides, dict) or not all(isinstance(key, str) for key in overrides):
+        raise ValueError("Evaluation config environment must be a string-keyed mapping.")
+    for key, value in overrides.items():
+        os.environ[key] = str(value).lower() if isinstance(value, bool) else str(value)
+    return path
+
+
 async def async_main() -> None:
     parser = argparse.ArgumentParser(description="Run the evaluation harness.")
     parser.add_argument("--split", type=str, required=True, choices=["dev", "test"], help="Dataset split to evaluate")
@@ -54,6 +70,8 @@ async def async_main() -> None:
         cases = cases[:args.limit]
 
     logger.info(f"Loaded {len(cases)} cases for split '{args.split}'")
+
+    config_path = apply_config(args.config)
 
     # Setup context
     settings = Settings()
@@ -90,7 +108,7 @@ async def async_main() -> None:
             "git_sha": git_sha,
             "is_dirty": is_git_dirty(),
             "split": args.split,
-            "config": args.config,
+            "config": str(config_path.relative_to(Path(__file__).resolve().parent)),
             "models": {"llm": settings.FAST_MODEL},
         },
         "metrics": report.as_dict(),
