@@ -5,7 +5,7 @@
 - Branch: stage/6-retrieval-routing-ablations
 - Last commit: S6.8 evaluator measurement repair; descriptions/raw-name config and accurate routing, retrieval, token, and cost reporting are ready for ablations
 - Active model: Codex (GPT-5)
-- Next action: After the Gemini rate-limit window recovers, run the controlled dev ablations at low RPM, commit reports and decisions, then rerun CI after Docker Hub recovery.
+- Next action: Obtain Gemini access that does not return HTTP 429 for `gemini-2.5-flash`, then run controlled dev ablations at low RPM, commit reports and decisions, and rerun CI after Docker Hub recovery.
 
 ## Step Checklist
 | Step | Status | Commit | Notes |
@@ -52,7 +52,7 @@
 | S6.5 | DONE | pending | Deterministic empty/all-null/truncation verification routes failures through shared repair budget. |
 | S6.6 | DONE | pending | Pure deterministic chart selection and chart spec included in final response. |
 | S6.7 | DONE | pending | Optional structured planner behind PLANNER_ENABLED; disabled by default. |
-| S6.8 | IN PROGRESS | pending | The evaluator uses encrypted local read-only demo credentials, correct ports, per-case conversations, metadata sync, a Windows-compatible event loop, production SQL validation/execution, and redacted HTTP-client logs. It now records actual routing, retrieved-table precision/recall, graph token/cost totals, cache mode, and config-specific report filenames; raw-name-only descriptions config added. A one-case validation hit Gemini HTTP 429, so no new report is accepted as evidence yet. |
+| S6.8 | BLOCKED | pending | The evaluator uses encrypted local read-only demo credentials, correct ports, per-case conversations, metadata sync, a Windows-compatible event loop, production SQL validation/execution, and redacted HTTP-client logs. It now records actual routing, retrieved-table precision/recall, graph token/cost totals, cache mode, and config-specific report filenames; raw-name-only descriptions config added. Repeated low-rate real-Gemini checks return HTTP 429 before generation, so no new report is accepted as evidence yet. |
 | S7.1 | DONE | pending | Next.js scaffold, typed API client, Vitest, same-origin proxy, and register/login UI; frontend gate passed. |
 | S7.2 | DONE | pending | Connections list/create/status UI with safe error display; frontend gate passed. |
 | S7.3 | DONE | pending | Chat page consumes query SSE with fetch streaming and presents live event state; frontend gate passed. |
@@ -95,7 +95,7 @@
 
 ## Known Issues / Blockers
 - Docker Hub credentials are configured. Authenticated Docker Hub token requests timed out through all bounded retries for the database jobs; wait for registry recovery, then rerun CI.
-- Gemini returned HTTP 429 for the latest one-case live evaluator check. Wait for the rate-limit window before starting full low-RPM ablations.
+- Gemini returns HTTP 429 before generation even for one low-rate live evaluator case. This blocks the required real-model ablations; use a project/key with available Gemini capacity or switch to an approved available provider/model before retrying.
 - The local disposable test database on port 5433 has been migrated; the focused retrieval integration suite now passes (3 tests). The full backend gate remains pending the separate Windows Application Control limitation below.
 - Windows Application Control blocks the `mypy` executable invoked by `scripts/make.py check`; `python -m mypy app` succeeds through the project interpreter.
 
