@@ -59,6 +59,7 @@ async def async_main() -> None:
     parser.add_argument("--limit", type=int, default=None, help="Limit number of cases to run")
     parser.add_argument("--cache", type=str, default="off", choices=["record", "replay", "off"], help="Cache mode")
     parser.add_argument("--concurrency", type=int, default=2, help="Number of concurrent cases to run")
+    parser.add_argument("--rpm", type=int, default=6, help="Maximum evaluation cases started per minute")
     args = parser.parse_args()
 
     # Load dataset
@@ -80,8 +81,16 @@ async def async_main() -> None:
     # Run cases with concurrency limit
     semaphore = asyncio.Semaphore(args.concurrency)
     
+    interval = 60 / args.rpm
+    last_started = 0.0
+
     async def _run_with_semaphore(case):
+        nonlocal last_started
         async with semaphore:
+            delay = interval - (asyncio.get_running_loop().time() - last_started)
+            if delay > 0:
+                await asyncio.sleep(delay)
+            last_started = asyncio.get_running_loop().time()
             logger.info(f"Running case {case.id}...")
             return await run_case(ctx, case)
 
