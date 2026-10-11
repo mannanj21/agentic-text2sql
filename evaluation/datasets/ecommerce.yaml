@@ -196,9 +196,9 @@ cases:
     db: ecommerce
     question: "How many orders were placed each month this year?"
     gold_sql: |
-      SELECT date_trunc('month', created_at) AS month, count(*) AS order_count
+      SELECT date_trunc('month', order_date) AS month, count(*) AS order_count
       FROM public.orders
-      WHERE date_part('year', created_at) = date_part('year', CURRENT_DATE)
+      WHERE date_part('year', order_date) = date_part('year', CURRENT_DATE)
       GROUP BY 1
       ORDER BY 1
     difficulty: medium
@@ -235,7 +235,7 @@ cases:
     gold_sql: |
       SELECT count(*) AS recent_order_count
       FROM public.orders
-      WHERE created_at >= CURRENT_DATE - INTERVAL '30 days'
+      WHERE order_date >= CURRENT_DATE - INTERVAL '30 days'
     difficulty: medium
     category: time
     expected_intent: ANSWER
@@ -251,7 +251,7 @@ cases:
     gold_sql: |
       SELECT sum(total_amount) AS last_month_revenue
       FROM public.orders
-      WHERE date_trunc('month', created_at) = date_trunc('month', CURRENT_DATE - INTERVAL '1 month')
+      WHERE date_trunc('month', order_date) = date_trunc('month', CURRENT_DATE - INTERVAL '1 month')
     difficulty: medium
     category: time
     expected_intent: ANSWER

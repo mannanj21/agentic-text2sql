@@ -110,6 +110,7 @@ ALLOWED_FUNCTIONS = {
     "to_char",
     "trim",
     "upper",
+    "year",
 }
 
 # Schemas that are explicitly forbidden
