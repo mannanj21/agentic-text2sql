@@ -1,11 +1,11 @@
 # PROGRESS
 
 ## Current
-- Stage: 8 (CI) | Step: S8.6 | Status: IN PROGRESS
+- Stage: 9 (Documentation and Release) | Step: S9.1 | Status: IN PROGRESS
 - Branch: stage/6-retrieval-routing-ablations
 - Last commit: S6.8 evaluator measurement repair; descriptions/raw-name config and accurate routing, retrieval, token, and cost reporting are ready for ablations
 - Active model: Codex (GPT-5)
-- Next action: Run the complete CI workflow; if green, complete Stage 9 documentation and release checks.
+- Next action: Complete README, design/security documentation, and the Definition-of-Done audit before the final held-out evaluation.
 
 ## Step Checklist
 | Step | Status | Commit | Notes |
@@ -64,7 +64,7 @@
 | S8.3 | DONE | pending | Worst-case FakeLLM SQL injection cannot reach executor; hostile result cells remain prompt-delimited and answer generation has no execution tool. Security suite: 85 passing. |
 | S8.4 | DONE | pending | One-shot migration, api-1/api-2 behind SSE-safe nginx, replica headers, routing, authenticated SSE delivery, cross-replica continuation, and recoverable one-replica failover are locally verified. |
 | S8.5 | DONE | pending | Locust platform/fake baseline plus a quota-bounded real-Gemini smoke are measured in `docs/loadtest.md`. The real run: one user/20 seconds, 25 requests, zero failures, and one real SSE query at 3,799 ms; explicitly documented as a latency sample, not a capacity claim. |
-| S8.6 | IN PROGRESS | pending | CI covers secret scan, backend lint/type/unit, Postgres authz matrix, frontend lint/type/unit/build, Playwright page E2E, and a seeded-demo security suite. Docker Hub credentials are confirmed available; bounded retries cover authenticated login and Compose startup. In the latest run, all non-database jobs passed, but Docker Hub's token endpoint timed out through all retries for the database jobs; rerun after registry recovery. Manual eval remains deferred because the runner assumes local target DBs. |
+| S8.6 | DONE | pending | CI covers secret scan, backend lint/type/unit, Postgres authz matrix, frontend lint/type/unit/build, Playwright page E2E, and a seeded-demo security suite. GitHub Actions run 38149613300 completed successfully on `cb9727b`. |
 | S9.1 | TODO | — | README |
 | S9.2 | TODO | — | design.md |
 | S9.3 | TODO | — | security.md |
