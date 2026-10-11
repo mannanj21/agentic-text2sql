@@ -69,7 +69,7 @@
 | S9.2 | TODO | — | design.md |
 | S9.3 | TODO | — | security.md |
 | S9.4 | TODO | — | DoD audit |
-| S9.5 | BLOCKED | pending | One permitted held-out run was rate-limited in 13 cases, so it is invalid and cannot be publicly reported. No automatic retry under the frozen-split rule. |
+| S9.5 | BLOCKED | pending | The original held-out run was rate-limited in 13 cases; an explicitly approved token-paced replacement still rate-limited 11 cases. Neither is publicly reportable; no further retry without a higher-capacity provider/model or explicit configuration exception. |
 | S9.6 | TODO | — | Clean-clone verification |
 | S9.7 | TODO | — | Resume bullets |
 

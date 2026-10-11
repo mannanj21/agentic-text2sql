@@ -9,10 +9,12 @@ therefore invalid for accuracy reporting and no headline metric is claimed.
 
 Evidence: `evaluation/reports/20261011_151516_c280bee_default_test.md`.
 
-No retry is performed automatically: the implementation plan limits the
-held-out split to one final run. A future retry requires explicit human
-approval after provider capacity is sufficient and the evaluator can pace LLM
-calls by token budget, not only by case starts.
+An explicitly approved replacement run added 40-second per-provider-call
+pacing, but it still received HTTP 429 for 11 cases. This indicates that the
+provider's available rolling token allowance (or individual full-schema prompt
+size) is insufficient; pacing alone is not enough. No further retry is made.
+A future run requires a provider/model with sufficient token capacity or an
+explicitly approved change to the held-out evaluation configuration.
 
 ## Baseline to final comparison
 
