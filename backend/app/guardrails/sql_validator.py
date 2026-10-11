@@ -76,6 +76,7 @@ FORBIDDEN_FUNCTIONS = {
 # default.  PostgreSQL built-ins not listed here should be added deliberately,
 # rather than becoming executable merely because sqlglot can parse them.
 ALLOWED_FUNCTIONS = {
+    "and",
     "abs",
     "age",
     "array_agg",
@@ -85,8 +86,10 @@ ALLOWED_FUNCTIONS = {
     "concat",
     "count",
     "current_date",
+    "currentdate",
     "current_timestamp",
     "date_part",
+    "timestamptrunc",
     "date_trunc",
     "extract",
     "floor",
