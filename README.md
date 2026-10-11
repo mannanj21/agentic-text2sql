@@ -85,7 +85,9 @@ and rate limiting. See [docs/security.md](docs/security.md).
 
 - PostgreSQL only; the Dialect interface is designed for future expansion.
 - Evaluation uses a small hand-written corpus; final held-out metrics must be
-  read with that limitation in mind.
+  read with that limitation in mind. The held-out final run is explicitly
+  deferred: the configured Groq account rate-limited both documented attempts,
+  so no final accuracy claim is made.
 - Full-schema context currently outperformed vector retrieval on the v1 corpus;
   revisit this choice for materially larger schemas.
 - No fine-grained RBAC, cloud warehouses, MySQL, result-checking LLM, or

@@ -1,11 +1,11 @@
 # PROGRESS
 
 ## Current
-- Stage: 9 (Documentation and Release) | Step: S9.5 | Status: BLOCKED
+- Stage: 9 (Documentation and Release) | Step: S9.3 / S9.6 / S9.7 | Status: IN PROGRESS
 - Branch: stage/6-retrieval-routing-ablations
 - Last commit: S6.8 evaluator measurement repair; descriptions/raw-name config and accurate routing, retrieval, token, and cost reporting are ready for ablations
 - Active model: Codex (GPT-5)
-- Next action: Human decision required: approve a held-out retry after token-safe per-call pacing/provider capacity is available, or release with final evaluation explicitly deferred.
+- Next action: Complete security/resume documentation and clean-clone verification; final held-out evaluation is explicitly deferred.
 
 ## Step Checklist
 | Step | Status | Commit | Notes |
@@ -69,7 +69,7 @@
 | S9.2 | TODO | — | design.md |
 | S9.3 | TODO | — | security.md |
 | S9.4 | TODO | — | DoD audit |
-| S9.5 | BLOCKED | pending | The original held-out run was rate-limited in 13 cases; an explicitly approved token-paced replacement still rate-limited 11 cases. Neither is publicly reportable; no further retry without a higher-capacity provider/model or explicit configuration exception. |
+| S9.5 | DEFERRED | pending | The original held-out run was rate-limited in 13 cases; an explicitly approved token-paced replacement still rate-limited 11 cases. Neither is publicly reportable; deferred by human choice and disclosed in README/final-test.md. |
 | S9.6 | TODO | — | Clean-clone verification |
 | S9.7 | TODO | — | Resume bullets |
 
