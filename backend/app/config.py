@@ -59,6 +59,7 @@ class Settings(BaseSettings):
     # --- Retrieval ---
     RETRIEVAL_TOP_K: int = 10
     RETRIEVAL_MIN_TABLES: int = 15
+    INCLUDE_SCHEMA_DESCRIPTIONS: bool = True
 
     # --- Display ---
     RESULT_PREVIEW_ROWS: int = 20

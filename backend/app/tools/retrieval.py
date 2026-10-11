@@ -80,6 +80,7 @@ async def _expand_one_fk_hop(db: AsyncSession, table_ids: set[str]) -> set[str]:
 async def _render(
     db: AsyncSession, connection_id: str, table_ids: set[str], question: str
 ) -> tuple[str, list[str], list[str]]:
+    include_descriptions = get_settings().INCLUDE_SCHEMA_DESCRIPTIONS
     tables = (
         await db.scalars(
             select(SchemaTable)
@@ -112,7 +113,7 @@ async def _render(
             continue
         rendered_ids.append(table.id)
         names.append(f"{table.schema}.{table.name}")
-        if table.description:
+        if include_descriptions and table.description:
             lines.append(f"-- {table.description}")
         lines.append(f"CREATE TABLE {table.schema}.{table.name} (")
         definitions: list[str] = []
@@ -126,7 +127,7 @@ async def _render(
                 definition += (
                     f" REFERENCES {target_table.schema}.{target_table.name}({target.name})"
                 )
-            if column.description:
+            if include_descriptions and column.description:
                 definition += f" -- {column.description}"
             definitions.append(definition)
         lines.append(",\n".join(definitions))

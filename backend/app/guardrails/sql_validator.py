@@ -206,8 +206,7 @@ async def _check_schema_and_columns(
 
     # 1. Reject 'SELECT *' if any table in the query contains a sensitive column.
     has_star = any(
-        not isinstance(star_node.parent, exp.Count)
-        for star_node in statement.find_all(exp.Star)
+        not isinstance(star_node.parent, exp.Count) for star_node in statement.find_all(exp.Star)
     )
 
     if has_star:

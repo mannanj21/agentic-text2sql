@@ -1,11 +1,11 @@
 # PROGRESS
 
 ## Current
-- Stage: 8 (Hardening) | Step: S8.6 | Status: IN PROGRESS
+- Stage: 6 (Ablations) and 8 (CI) | Step: S6.8 / S8.6 | Status: IN PROGRESS
 - Branch: stage/6-retrieval-routing-ablations
-- Last commit: S6.8 evaluator repair verified with a successful one-case real-Gemini dev run; ablation configs are next
+- Last commit: S6.8 evaluator measurement repair; descriptions/raw-name config and accurate routing, retrieval, token, and cost reporting are ready for ablations
 - Active model: Codex (GPT-5)
-- Next action: Validate one dev evaluation case after the evaluator repair, add ablation configs/reports, and rerun CI after Docker Hub token-service recovery.
+- Next action: After the Gemini rate-limit window recovers, run the controlled dev ablations at low RPM, commit reports and decisions, then rerun CI after Docker Hub recovery.
 
 ## Step Checklist
 | Step | Status | Commit | Notes |
@@ -52,7 +52,7 @@
 | S6.5 | DONE | pending | Deterministic empty/all-null/truncation verification routes failures through shared repair budget. |
 | S6.6 | DONE | pending | Pure deterministic chart selection and chart spec included in final response. |
 | S6.7 | DONE | pending | Optional structured planner behind PLANNER_ENABLED; disabled by default. |
-| S6.8 | IN PROGRESS | pending | The evaluator now uses encrypted local read-only demo credentials, correct ports, per-case conversations, metadata sync, a Windows-compatible event loop, production SQL validation/execution, and redacted HTTP-client logs. One real-Gemini dev case now reports 100% success/accuracy (3.96 s); Flash is the safe default after the previous strong-model 404. Add config support and measured ablation reports next. |
+| S6.8 | IN PROGRESS | pending | The evaluator uses encrypted local read-only demo credentials, correct ports, per-case conversations, metadata sync, a Windows-compatible event loop, production SQL validation/execution, and redacted HTTP-client logs. It now records actual routing, retrieved-table precision/recall, and graph token/cost totals; raw-name-only descriptions config added. A one-case validation hit Gemini HTTP 429, so no new report is accepted as evidence yet. |
 | S7.1 | DONE | pending | Next.js scaffold, typed API client, Vitest, same-origin proxy, and register/login UI; frontend gate passed. |
 | S7.2 | DONE | pending | Connections list/create/status UI with safe error display; frontend gate passed. |
 | S7.3 | DONE | pending | Chat page consumes query SSE with fetch streaming and presents live event state; frontend gate passed. |
@@ -95,9 +95,9 @@
 
 ## Known Issues / Blockers
 - Docker Hub credentials are configured. Authenticated Docker Hub token requests timed out through all bounded retries for the database jobs; wait for registry recovery, then rerun CI.
-- Evaluator unit tests pass when using a workspace-local pytest temp directory. Live schema sync exposed psycopg's Windows Proactor-loop incompatibility; the evaluator CLI now uses SelectorEventLoop and needs one-case revalidation. Ruff still reports pre-existing formatting debt in evaluator files.
-- gh CLI not installed — blocks S0.3 (GitHub remote creation). Will guide human to install when we reach that step.
-- Docker Desktop not installed — blocks S0.6 (Docker Compose). Will guide human to install when we reach that step.
+- Gemini returned HTTP 429 for the latest one-case live evaluator check. Wait for the rate-limit window before starting full low-RPM ablations.
+- The focused retrieval integration suite points to its separate test database on port 5433, where migrations are currently absent (`users` table missing). Its lint/format and evaluator unit coverage pass; repair the test fixture/database setup before treating the full backend gate as green.
+- Windows Application Control blocks the `mypy` executable invoked by `scripts/make.py check`; `python -m mypy app` succeeds through the project interpreter.
 
 ## Measured Numbers
 (none yet)

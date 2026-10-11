@@ -2,6 +2,7 @@ import uuid
 from unittest.mock import AsyncMock, patch
 
 import pytest
+from sqlalchemy import select
 
 from app.database.core import AsyncSessionLocal
 from app.database.models import (
@@ -121,3 +122,26 @@ async def test_retrieve_schema_vector_search_with_fk_expansion(retrieval_setup):
                 # One top-k hit plus a one-hop FK expansion is bounded and usable.
                 assert 1 <= len(result.table_ids) <= 2
                 assert result.ddl
+
+
+async def test_retrieve_schema_can_omit_descriptions(retrieval_setup):
+    """The raw-schema ablation must remove prose without hiding structure."""
+    conn_id = retrieval_setup
+    async with AsyncSessionLocal() as db:
+        tables = (
+            await db.scalars(select(SchemaTable).where(SchemaTable.connection_id == conn_id))
+        ).all()
+        tables[0].description = "A human-readable table description."
+        columns = (
+            await db.scalars(select(SchemaColumn).where(SchemaColumn.table_id == tables[0].id))
+        ).all()
+        columns[0].description = "A human-readable column description."
+        await db.commit()
+
+        with patch("app.tools.retrieval.get_settings") as mock_settings:
+            mock_settings.return_value.RETRIEVAL_MIN_TABLES = 10
+            mock_settings.return_value.INCLUDE_SCHEMA_DESCRIPTIONS = False
+            result = await retrieve_schema(db, conn_id, "Show users")
+
+    assert "A human-readable" not in result.ddl
+    assert "CREATE TABLE public.users" in result.ddl

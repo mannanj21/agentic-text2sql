@@ -20,7 +20,7 @@ from evaluation.validate_dataset import DatasetCase
 from app.config import Settings
 from app.database.core import AsyncSessionLocal
 from app.database.crypto import CredentialCipher
-from app.database.models import Connection, Conversation, Run, RunStep, User
+from app.database.models import Connection, Conversation, Run, RunStep, SchemaTable, User
 from app.agent.graph import build_graph
 from app.llm.client import LLMClient
 from app.persistence.tracing import RunRecorder
@@ -122,6 +122,10 @@ async def run_case(ctx: RunnerContext, case: DatasetCase) -> EvalResult:
     retries = 0
     final_sql = None
     final_answer = None
+    actual_intent = None
+    retrieved_schema_ids: list[str] = []
+    graph_tokens = 0
+    graph_cost = 0.0
     pred_columns = []
     pred_row_count = 0
     error_msg = None
@@ -139,7 +143,9 @@ async def run_case(ctx: RunnerContext, case: DatasetCase) -> EvalResult:
                 kind = event["event"]
                 name = event["name"]
                 
-                if name not in {"guardrail", "generate", "validate", "execute", "repair", "answer"}:
+                if name not in {
+                    "guardrail", "contextualize", "retrieve", "generate", "validate", "execute", "repair", "answer"
+                }:
                     continue
                     
                 if kind == "on_chain_start":
@@ -157,6 +163,12 @@ async def run_case(ctx: RunnerContext, case: DatasetCase) -> EvalResult:
                         
                     data = event["data"].get("output", {})
                     if isinstance(data, dict):
+                        graph_tokens = max(graph_tokens, int(data.get("total_tokens", 0) or 0))
+                        graph_cost = max(graph_cost, float(data.get("total_cost", 0.0) or 0.0))
+                        if name == "contextualize":
+                            actual_intent = data.get("intent")
+                        if name == "retrieve":
+                            retrieved_schema_ids = data.get("retrieved_schema_ids", [])
                         if name == "repair":
                             retries += 1
                         
@@ -202,20 +214,31 @@ async def run_case(ctx: RunnerContext, case: DatasetCase) -> EvalResult:
                 lenient_acc = comp.lenient_match
                 reason = comp.reason
             else:
-                # If non-answer, check if the graph recognized the intent correctly
-                # We do this by seeing if the final answer explicitly states it or if error_msg matches.
-                # For now, let's just check if it returned the expected intent in the 'answer' node metadata 
-                # (which we didn't implement fully yet for intent routing). Let's assume false for unsupported intents for now.
-                accuracy = False
+                accuracy = actual_intent == case.expected_intent
                 lenient_acc = False
-                reason = "Not implemented routing check"
+                reason = "Intent matched" if accuracy else f"Expected {case.expected_intent}; got {actual_intent or 'none'}"
+
+            retrieved_names: set[str] = set()
+            if retrieved_schema_ids:
+                retrieved_names = set(
+                    (
+                        await ctx.db.scalars(
+                            select(SchemaTable.schema + "." + SchemaTable.name).where(
+                                SchemaTable.id.in_(retrieved_schema_ids)
+                            )
+                        )
+                    ).all()
+                )
 
             # Tokens & Cost from run
             steps = (
                 await ctx.db.scalars(select(RunStep).where(RunStep.run_id == recorder.run_id))
             ).all()
-            tokens = sum((step.tokens_in or 0) + (step.tokens_out or 0) for step in steps)
-            cost = sum(step.cost or 0.0 for step in steps)
+            traced_tokens = sum((step.tokens_in or 0) + (step.tokens_out or 0) for step in steps)
+            traced_cost = sum(step.cost or 0.0 for step in steps)
+            # Graph state is the authoritative fallback until every node persists usage to RunStep.
+            tokens = max(traced_tokens, graph_tokens)
+            cost = max(traced_cost, graph_cost)
             
             return EvalResult(
                 case_id=case.id,
@@ -227,7 +250,7 @@ async def run_case(ctx: RunnerContext, case: DatasetCase) -> EvalResult:
                 accuracy=accuracy,
                 lenient_accuracy=lenient_acc,
                 expected_tables=set(case.expected_tables),
-                used_tables=set(),  # To do: parse final_sql to extract tables
+                used_tables=retrieved_names,
                 retries=retries,
                 tokens=tokens,
                 cost=cost,
