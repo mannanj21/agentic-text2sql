@@ -51,7 +51,7 @@ class Settings(BaseSettings):
 
     # --- Agent ---
     PLANNER_ENABLED: bool = False
-    MAX_REPAIR_ATTEMPTS: int = 3
+    MAX_REPAIR_ATTEMPTS: int = 1
     MAX_RESULT_ROWS: int = 500
     STATEMENT_TIMEOUT_MS: int = 30000
     LOCK_TIMEOUT_MS: int = 5000
@@ -59,7 +59,7 @@ class Settings(BaseSettings):
 
     # --- Retrieval ---
     RETRIEVAL_TOP_K: int = 10
-    RETRIEVAL_MIN_TABLES: int = 15
+    RETRIEVAL_MIN_TABLES: int = 999
     INCLUDE_SCHEMA_DESCRIPTIONS: bool = True
 
     # --- Display ---
