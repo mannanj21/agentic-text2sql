@@ -96,7 +96,7 @@
 ## Known Issues / Blockers
 - Docker Hub credentials are configured. Authenticated Docker Hub token requests timed out through all bounded retries for the database jobs; wait for registry recovery, then rerun CI.
 - Gemini returned HTTP 429 for the latest one-case live evaluator check. Wait for the rate-limit window before starting full low-RPM ablations.
-- The focused retrieval integration suite points to its separate test database on port 5433, where migrations are currently absent (`users` table missing). Its lint/format and evaluator unit coverage pass; repair the test fixture/database setup before treating the full backend gate as green.
+- The local disposable test database on port 5433 has been migrated; the focused retrieval integration suite now passes (3 tests). The full backend gate remains pending the separate Windows Application Control limitation below.
 - Windows Application Control blocks the `mypy` executable invoked by `scripts/make.py check`; `python -m mypy app` succeeds through the project interpreter.
 
 ## Measured Numbers
