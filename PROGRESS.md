@@ -52,7 +52,7 @@
 | S6.5 | DONE | pending | Deterministic empty/all-null/truncation verification routes failures through shared repair budget. |
 | S6.6 | DONE | pending | Pure deterministic chart selection and chart spec included in final response. |
 | S6.7 | DONE | pending | Optional structured planner behind PLANNER_ENABLED; disabled by default. |
-| S6.8 | IN PROGRESS | pending | The evaluator uses encrypted local read-only demo credentials, correct ports, per-case conversations, metadata sync, a Windows-compatible event loop, production SQL validation/execution, and redacted HTTP-client logs. It now records actual routing, retrieved-table precision/recall, and graph token/cost totals; raw-name-only descriptions config added. A one-case validation hit Gemini HTTP 429, so no new report is accepted as evidence yet. |
+| S6.8 | IN PROGRESS | pending | The evaluator uses encrypted local read-only demo credentials, correct ports, per-case conversations, metadata sync, a Windows-compatible event loop, production SQL validation/execution, and redacted HTTP-client logs. It now records actual routing, retrieved-table precision/recall, graph token/cost totals, cache mode, and config-specific report filenames; raw-name-only descriptions config added. A one-case validation hit Gemini HTTP 429, so no new report is accepted as evidence yet. |
 | S7.1 | DONE | pending | Next.js scaffold, typed API client, Vitest, same-origin proxy, and register/login UI; frontend gate passed. |
 | S7.2 | DONE | pending | Connections list/create/status UI with safe error display; frontend gate passed. |
 | S7.3 | DONE | pending | Chat page consumes query SSE with fetch streaming and presents live event state; frontend gate passed. |

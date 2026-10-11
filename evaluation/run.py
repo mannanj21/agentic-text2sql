@@ -73,6 +73,7 @@ async def async_main() -> None:
     logger.info(f"Loaded {len(cases)} cases for split '{args.split}'")
 
     config_path = apply_config(args.config)
+    os.environ["LLM_CACHE_MODE"] = args.cache
 
     # Setup context
     settings = Settings()
@@ -104,7 +105,7 @@ async def async_main() -> None:
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     git_sha = get_git_sha()
     dirty = "_dirty" if is_git_dirty() else ""
-    report_name = f"{timestamp}_{git_sha}{dirty}_{args.split}"
+    report_name = f"{timestamp}_{git_sha}{dirty}_{config_path.stem}_{args.split}"
     
     reports_dir = Path(__file__).resolve().parent / "reports"
     reports_dir.mkdir(parents=True, exist_ok=True)
@@ -118,6 +119,7 @@ async def async_main() -> None:
             "is_dirty": is_git_dirty(),
             "split": args.split,
             "config": str(config_path.relative_to(Path(__file__).resolve().parent)),
+            "cache_mode": args.cache,
             "models": {"llm": settings.FAST_MODEL},
         },
         "metrics": report.as_dict(),
