@@ -33,7 +33,7 @@ class Settings(BaseSettings):
     ALLOW_PRIVATE_HOSTS: bool = False
 
     # --- LLM ---
-    LLM_PROVIDER: Literal["gemini", "ollama", "fake"] = "fake"
+    LLM_PROVIDER: Literal["gemini", "groq", "ollama", "fake"] = "fake"
     LLM_API_KEY: SecretStr | None = None
     FAST_MODEL: str = "gemini-2.5-flash"
     STRONG_MODEL: str = "gemini-2.5-flash"
@@ -43,6 +43,7 @@ class Settings(BaseSettings):
 
     # --- Ollama ---
     OLLAMA_BASE_URL: str = "http://localhost:11434"
+    GROQ_BASE_URL: str = "https://api.groq.com/openai/v1"
 
     # --- Embeddings ---
     EMBEDDING_MODEL: str = "bge-m3"

@@ -38,7 +38,7 @@ class TokenUsage:
 
 
 class LLMClient:
-    """Complete messages as a Pydantic model through Gemini, Ollama, or fake LLMs."""
+    """Complete messages as a Pydantic model through hosted, local, or fake LLMs."""
 
     def __init__(
         self,
@@ -125,6 +125,8 @@ class LLMClient:
             try:
                 if self.settings.LLM_PROVIDER == "gemini":
                     return await self._gemini(model, messages, schema)
+                if self.settings.LLM_PROVIDER == "groq":
+                    return await self._groq(model, messages, schema)
                 if self.settings.LLM_PROVIDER == "ollama":
                     return await self._ollama(model, messages, schema)
                 raise LLMProviderError(f"Unsupported LLM provider: {self.settings.LLM_PROVIDER}")
@@ -213,9 +215,43 @@ class LLMClient:
         completion = int(data.get("eval_count", 0) or 0)
         return str(text), self._usage(prompt, completion, prompt + completion, model)
 
+    async def _groq(
+        self, model: str, messages: Sequence[Message], schema: type[BaseModel]
+    ) -> tuple[str, TokenUsage]:
+        """Use Groq's OpenAI-compatible Chat Completions structured-output API."""
+        response = await self._http.post(
+            f"{self.settings.GROQ_BASE_URL.rstrip('/')}/chat/completions",
+            headers={"Authorization": f"Bearer {self._api_key()}"},
+            json={
+                "model": model,
+                "messages": list(messages),
+                "response_format": {
+                    "type": "json_schema",
+                    "json_schema": {
+                        "name": schema.__name__.lower(),
+                        "strict": False,
+                        "schema": schema.model_json_schema(),
+                    },
+                },
+            },
+        )
+        self._raise_for_status(response)
+        data = response.json()
+        try:
+            text = data["choices"][0]["message"]["content"]
+        except (KeyError, IndexError, TypeError) as exc:
+            raise LLMProviderError("Groq returned no response content.") from exc
+        usage = data.get("usage", {})
+        return str(text), self._usage(
+            int(usage.get("prompt_tokens", 0) or 0),
+            int(usage.get("completion_tokens", 0) or 0),
+            int(usage.get("total_tokens", 0) or 0),
+            model,
+        )
+
     def _api_key(self) -> str:
         if self.settings.LLM_API_KEY is None or not self.settings.LLM_API_KEY.get_secret_value():
-            raise LLMProviderError("LLM_API_KEY is required when LLM_PROVIDER=gemini.")
+            raise LLMProviderError("LLM_API_KEY is required for the selected hosted provider.")
         return self.settings.LLM_API_KEY.get_secret_value()
 
     @staticmethod

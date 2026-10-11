@@ -36,6 +36,13 @@ def gemini_response(content: str) -> dict[str, object]:
     }
 
 
+def groq_response(content: str) -> dict[str, object]:
+    return {
+        "choices": [{"message": {"content": content}}],
+        "usage": {"prompt_tokens": 7, "completion_tokens": 3, "total_tokens": 10},
+    }
+
+
 @pytest.mark.asyncio
 async def test_retries_rate_limit_then_returns_structured_response() -> None:
     calls = 0
@@ -85,6 +92,29 @@ async def test_malformed_json_reasks_once_then_raises_controlled_error() -> None
 
     with pytest.raises(LLMProviderError, match="valid structured output"):
         await client.complete_structured("fast", [{"role": "user", "content": "Hi"}], Reply)
+    await client.aclose()
+
+
+@pytest.mark.asyncio
+async def test_groq_uses_openai_compatible_structured_output() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url == "https://api.groq.com/openai/v1/chat/completions"
+        assert request.headers["authorization"] == "Bearer not-a-real-key"
+        payload = json.loads(request.content)
+        assert payload["response_format"]["type"] == "json_schema"
+        assert payload["response_format"]["json_schema"]["schema"] == Reply.model_json_schema()
+        return httpx.Response(200, json=groq_response('{"answer":"ok"}'))
+
+    client = LLMClient(
+        settings(LLM_PROVIDER="groq", FAST_MODEL="openai/gpt-oss-20b"),
+        http_client=httpx.AsyncClient(transport=httpx.MockTransport(handler)),
+    )
+    parsed, usage = await client.complete_structured(
+        "fast", [{"role": "user", "content": "Hi"}], Reply
+    )
+
+    assert parsed == Reply(answer="ok")
+    assert usage == TokenUsage(prompt_tokens=7, completion_tokens=3, total_tokens=10, cost_usd=0.0)
     await client.aclose()
 
 
