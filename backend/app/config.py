@@ -10,6 +10,7 @@ class Settings(BaseSettings):
 
     # --- Application ---
     APP_ENV: Literal["development", "production", "test"] = "development"
+    REPLICA_ID: str = "local"
 
     # --- App Database (Postgres with pgvector) ---
     DATABASE_URL: SecretStr
@@ -32,15 +33,18 @@ class Settings(BaseSettings):
     ALLOW_PRIVATE_HOSTS: bool = False
 
     # --- LLM ---
-    LLM_PROVIDER: Literal["gemini", "ollama", "fake"] = "fake"
+    LLM_PROVIDER: Literal["gemini", "groq", "ollama", "fake"] = "fake"
     LLM_API_KEY: SecretStr | None = None
     FAST_MODEL: str = "gemini-2.5-flash"
-    STRONG_MODEL: str = "gemini-2.5-pro"
+    STRONG_MODEL: str = "gemini-2.5-flash"
     LLM_TIMEOUT_SECONDS: float = 30.0
     LLM_MAX_RETRIES: int = 3
+    LLM_MIN_INTERVAL_SECONDS: float = 0.0
+    FAKE_LLM_LATENCY_MS: int = 0
 
     # --- Ollama ---
     OLLAMA_BASE_URL: str = "http://localhost:11434"
+    GROQ_BASE_URL: str = "https://api.groq.com/openai/v1"
 
     # --- Embeddings ---
     EMBEDDING_MODEL: str = "bge-m3"
@@ -48,7 +52,7 @@ class Settings(BaseSettings):
 
     # --- Agent ---
     PLANNER_ENABLED: bool = False
-    MAX_REPAIR_ATTEMPTS: int = 3
+    MAX_REPAIR_ATTEMPTS: int = 1
     MAX_RESULT_ROWS: int = 500
     STATEMENT_TIMEOUT_MS: int = 30000
     LOCK_TIMEOUT_MS: int = 5000
@@ -56,7 +60,8 @@ class Settings(BaseSettings):
 
     # --- Retrieval ---
     RETRIEVAL_TOP_K: int = 10
-    RETRIEVAL_MIN_TABLES: int = 15
+    RETRIEVAL_MIN_TABLES: int = 999
+    INCLUDE_SCHEMA_DESCRIPTIONS: bool = True
 
     # --- Display ---
     RESULT_PREVIEW_ROWS: int = 20
@@ -66,6 +71,8 @@ class Settings(BaseSettings):
 
     # --- Rate Limiting ---
     RATE_LIMIT_PER_MIN: int = 30
+    LOGIN_RATE_LIMIT_PER_MIN: int = 10
+    MAX_QUESTION_LENGTH: int = 2000  # characters; enforced by input_guard before LLM call
 
     # --- Enrichment ---
     ENRICHMENT_TOKEN_CAP: int = 50000

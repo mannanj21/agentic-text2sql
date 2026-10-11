@@ -88,6 +88,12 @@ async def test_connection_creation_rejects_ssrf_unsafe_target(
         return ConnectionSafetyReport(reasons=(), default_transaction_read_only=True)
 
     monkeypatch.setattr(connections_api, "test_target_connection", target_check_should_not_run)
+    settings = connections_api.get_settings()
+    monkeypatch.setattr(
+        connections_api,
+        "get_settings",
+        lambda: settings.model_copy(update={"ALLOW_PRIVATE_HOSTS": False}),
+    )
     payload = _connection_payload()
     payload["host"] = "127.0.0.1"
     async with await _client_for_user() as client:

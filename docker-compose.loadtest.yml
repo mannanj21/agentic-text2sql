@@ -1,0 +1,9 @@
+services:
+  api-1:
+    environment:
+      LLM_PROVIDER: fake
+      FAKE_LLM_LATENCY_MS: 50
+  api-2:
+    environment:
+      LLM_PROVIDER: fake
+      FAKE_LLM_LATENCY_MS: 50

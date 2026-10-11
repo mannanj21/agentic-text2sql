@@ -1,0 +1,270 @@
+"""Eval runner logic [S5.4]."""
+
+from __future__ import annotations
+
+import asyncio
+import json
+import logging
+import os
+import time
+from collections.abc import AsyncGenerator
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any
+
+from evaluation.compare import compare_results
+from evaluation.metrics import EvalResult, MetricsReport, compute_metrics
+from evaluation.validate_dataset import DatasetCase
+
+# We import backend modules natively for eval execution.
+from app.config import Settings
+from app.database.core import AsyncSessionLocal
+from app.database.crypto import CredentialCipher
+from app.database.models import Connection, Conversation, Run, RunStep, SchemaTable, User
+from app.agent.graph import build_graph
+from app.llm.client import LLMClient
+from app.persistence.tracing import RunRecorder
+from app.tools.introspection import sync_schema_metadata
+from app.tools.execution import execute
+from app.guardrails.sql_validator import validate_sql
+from sqlalchemy import select
+
+
+class RunnerContext:
+    def __init__(self, settings: Settings, db, user: User, connections: dict[str, Connection], llm):
+        self.settings = settings
+        self.db = db
+        self.user = user
+        self.connections = connections
+        self.llm = llm
+
+
+async def _run_eval_sql(ctx: RunnerContext, connection: Connection, sql: str) -> tuple[list[str], list[list[object]]]:
+    """Execute eval SQL through the production validator/executor boundary."""
+    validated = await validate_sql(sql, connection, ctx.db)
+    result = await execute(connection, validated)
+    return result.columns, result.rows
+
+
+async def setup_eval_context(settings: Settings) -> RunnerContext:
+    db = AsyncSessionLocal()
+    
+    # Ensure an eval user exists
+    user = await db.scalar(select(User).where(User.email == "eval@example.com"))
+    if not user:
+        user = User(email="eval@example.com", password_hash="eval")
+        db.add(user)
+        await db.commit()
+        await db.refresh(user)
+
+    # Evaluations run only against the local, seeded, read-only demo targets.
+    # Store the password with the normal app cipher; it is never reported.
+    cipher = CredentialCipher(settings.ENCRYPTION_KEY)
+    targets = {
+        "ecommerce": {"port": 5434, "username": "readonly_demo", "password": "readonly_pass"},
+        "pagila": {"port": 5435, "username": "readonly_demo", "password": "readonly_pass"},
+    }
+    connections = {}
+    for db_name, target in targets.items():
+        conn = await db.scalar(select(Connection).where(Connection.name == f"eval_{db_name}"))
+        if not conn:
+            conn = Connection(
+                user_id=user.id,
+                name=f"eval_{db_name}",
+                host="localhost",
+                port=target["port"],
+                database=db_name,
+                username=target["username"],
+                encrypted_password=cipher.encrypt(target["password"]),
+                allowed_schemas=["public"],
+                status="ready",
+            )
+            db.add(conn)
+            await db.commit()
+            await db.refresh(conn)
+        else:
+            conn.host = "localhost"
+            conn.port = target["port"]
+            conn.database = db_name
+            conn.username = target["username"]
+            conn.encrypted_password = cipher.encrypt(target["password"])
+            conn.allowed_schemas = ["public"]
+            conn.status = "ready"
+            await db.commit()
+        await sync_schema_metadata(conn, db)
+        connections[db_name] = conn
+
+    llm = LLMClient(settings)
+    return RunnerContext(settings, db, user, connections, llm)
+
+
+async def run_case(ctx: RunnerContext, case: DatasetCase) -> EvalResult:
+    """Run a single evaluation case through the graph and return the result metrics."""
+    conn = ctx.connections[case.db]
+    
+    conv_id = f"eval-{case.id}"
+    conversation = await ctx.db.get(Conversation, conv_id)
+    if conversation is None:
+        ctx.db.add(Conversation(id=conv_id, user_id=ctx.user.id, connection_id=conn.id, title="eval"))
+        await ctx.db.commit()
+
+    initial_state = {
+        "question": case.question,
+        "history": [],
+        "connection_id": conn.id,
+        "conversation_id": conv_id,
+        "user_id": ctx.user.id,
+    }
+    
+    latency = {"llm": 0.0, "db": 0.0, "other": 0.0}
+    start_times = {}
+    active_steps: dict[str, RunStep] = {}
+    retries = 0
+    final_sql = None
+    final_answer = None
+    actual_intent = None
+    retrieved_schema_ids: list[str] = []
+    graph_tokens = 0
+    graph_cost = 0.0
+    pred_columns = []
+    pred_row_count = 0
+    error_msg = None
+    
+    try:
+        async with RunRecorder(
+            ctx.db,
+            conversation_id=conv_id,
+            user_id=ctx.user.id,
+            question=case.question,
+        ) as recorder:
+            graph = build_graph(ctx.llm, conn, ctx.db)
+            
+            async for event in graph.astream_events(initial_state, version="v2"):
+                kind = event["event"]
+                name = event["name"]
+                
+                if name not in {
+                    "guardrail", "contextualize", "retrieve", "generate", "validate", "execute", "repair", "answer"
+                }:
+                    continue
+                    
+                if kind == "on_chain_start":
+                    start_times[name] = time.time()
+                    active_steps[name] = await recorder.start_step(name)
+                elif kind == "on_chain_end":
+                    step_duration = time.time() - start_times.pop(name, time.time())
+                    
+                    if name in ("generate", "repair"):
+                        latency["llm"] += step_duration
+                    elif name == "execute":
+                        latency["db"] += step_duration
+                    else:
+                        latency["other"] += step_duration
+                        
+                    data = event["data"].get("output", {})
+                    if isinstance(data, dict):
+                        graph_tokens = max(graph_tokens, int(data.get("total_tokens", 0) or 0))
+                        graph_cost = max(graph_cost, float(data.get("total_cost", 0.0) or 0.0))
+                        if name == "contextualize":
+                            actual_intent = data.get("intent")
+                        if name == "retrieve":
+                            retrieved_schema_ids = data.get("retrieved_schema_ids", [])
+                        if name == "repair":
+                            retries += 1
+                        
+                        if data.get("status") == "failed":
+                            error_msg = data.get("error")
+                            if name == "repair" and data.get("error_kind") == "repair_budget_exhausted":
+                                pass
+                                
+                        if "validated_sql" in data:
+                            final_sql = data["validated_sql"]
+                        if "answer" in data:
+                            final_answer = data["answer"]
+                            
+                    step = active_steps.pop(name, None)
+                    if step is not None:
+                        await recorder.end_step(step)
+                        
+            # Execute gold SQL directly on DB using our app.tools.execution function
+            # Since this is an eval, we want to run the gold SQL to get gold rows
+            gold_rows = []
+            if case.gold_sql:
+                try:
+                    _gold_cols, g_rows = await _run_eval_sql(ctx, conn, case.gold_sql)
+                    gold_rows = g_rows
+                except Exception as e:
+                    logging.warning(f"Failed to run gold SQL for {case.id}: {e}")
+                    
+            # Get predicted rows
+            pred_rows = []
+            if final_sql:
+                try:
+                    p_cols, p_rows = await _run_eval_sql(ctx, conn, final_sql)
+                    pred_rows = p_rows
+                    pred_columns = p_cols
+                    pred_row_count = len(p_rows)
+                except Exception as e:
+                    error_msg = str(e)
+
+            # Compare results
+            if case.expected_intent == "ANSWER" and case.gold_sql:
+                comp = compare_results(gold_rows, pred_rows, order_sensitive=case.order_sensitive)
+                accuracy = comp.exact_match
+                lenient_acc = comp.lenient_match
+                reason = comp.reason
+            else:
+                accuracy = actual_intent == case.expected_intent
+                lenient_acc = False
+                reason = "Intent matched" if accuracy else f"Expected {case.expected_intent}; got {actual_intent or 'none'}"
+
+            retrieved_names: set[str] = set()
+            if retrieved_schema_ids:
+                retrieved_names = set(
+                    (
+                        await ctx.db.scalars(
+                            select(SchemaTable.schema + "." + SchemaTable.name).where(
+                                SchemaTable.id.in_(retrieved_schema_ids)
+                            )
+                        )
+                    ).all()
+                )
+
+            # Tokens & Cost from run
+            steps = (
+                await ctx.db.scalars(select(RunStep).where(RunStep.run_id == recorder.run_id))
+            ).all()
+            traced_tokens = sum((step.tokens_in or 0) + (step.tokens_out or 0) for step in steps)
+            traced_cost = sum(step.cost or 0.0 for step in steps)
+            # Graph state is the authoritative fallback until every node persists usage to RunStep.
+            tokens = max(traced_tokens, graph_tokens)
+            cost = max(traced_cost, graph_cost)
+            
+            return EvalResult(
+                case_id=case.id,
+                split=case.split,
+                difficulty=case.difficulty,
+                category=case.category,
+                expected_intent=case.expected_intent,
+                success=error_msg is None,
+                accuracy=accuracy,
+                lenient_accuracy=lenient_acc,
+                expected_tables=set(case.expected_tables),
+                used_tables=retrieved_names,
+                retries=retries,
+                tokens=tokens,
+                cost=cost,
+                latency_llm=latency["llm"],
+                latency_db=latency["db"],
+                latency_total=latency["llm"] + latency["db"] + latency["other"],
+                error=error_msg,
+                reason=reason,
+            )
+            
+    except Exception as exc:
+        return EvalResult(
+            case_id=case.id, split=case.split, difficulty=case.difficulty, category=case.category,
+            expected_intent=case.expected_intent, success=False, accuracy=False, lenient_accuracy=False,
+            expected_tables=set(case.expected_tables), used_tables=set(), retries=0, tokens=0, cost=0.0,
+            latency_llm=0.0, latency_db=0.0, latency_total=0.0, error=str(exc), reason="Exception"
+        )

@@ -61,6 +61,8 @@ class Connection(Base):
     allowed_schemas: Mapped[list[str]] = mapped_column(
         JSONB, nullable=False, default=lambda: ["public"]
     )
+    embedding_model: Mapped[str | None] = mapped_column(String, nullable=True)
+    embedding_dim: Mapped[int | None] = mapped_column(Integer, nullable=True)
     sample_values_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     status: Mapped[str] = mapped_column(String, nullable=False, default="pending")
     last_synced_at: Mapped[datetime.datetime | None] = mapped_column(
@@ -297,6 +299,18 @@ class RateLimit(Base):
     user_id: Mapped[str] = mapped_column(
         String, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
     )
+    window_start: Mapped[datetime.datetime] = mapped_column(
+        DateTime(timezone=True), primary_key=True
+    )
+    count: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+
+
+class LoginRateLimit(Base):
+    """Fixed-window login counter keyed by a keyed digest, never a raw email address."""
+
+    __tablename__ = "login_rate_limits"
+
+    subject_digest: Mapped[str] = mapped_column(String(64), primary_key=True)
     window_start: Mapped[datetime.datetime] = mapped_column(
         DateTime(timezone=True), primary_key=True
     )

@@ -73,6 +73,11 @@ def test_integration():
     uv_run("python -m pytest tests/integration -x -q --tb=short -m integration")
 
 
+def test_security():
+    """Run the Stage 4 security corpus and database-boundary tests."""
+    uv_run("python -m pytest tests/security -x -q --tb=short")
+
+
 def check():
     """Quick gate: lint + format check + types + unit tests."""
     lint()
@@ -84,6 +89,7 @@ def test_all():
     check()
     test_agent()
     test_integration()
+    test_security()
 
 
 def smoke():
@@ -134,6 +140,7 @@ TARGETS = {
     "test-unit": test_unit,
     "test-agent": test_agent,
     "test-integration": test_integration,
+    "test-security": test_security,
     "test-all": test_all,
     "smoke": smoke,
     "up": up,

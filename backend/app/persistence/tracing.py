@@ -29,6 +29,7 @@ class RunRecorder:
         self.run: Run | None = None
         self._started = 0.0
         self._run_token: object | None = None
+        self._step_starts: dict[str, float] = {}  # step.id -> perf_counter at start
 
     async def __aenter__(self) -> RunRecorder:
         self.run = Run(
@@ -79,8 +80,7 @@ class RunRecorder:
             raise RuntimeError("RunRecorder has not been entered.")
         return self.run.id
 
-    @asynccontextmanager
-    async def step(self, node: str, *, tool: str | None = None) -> AsyncIterator[RunStep]:
+    async def start_step(self, node: str, *, tool: str | None = None) -> RunStep:
         next_seq = await self.db.scalar(
             select(func.coalesce(func.max(RunStep.seq), 0) + 1).where(RunStep.run_id == self.run_id)
         )
@@ -89,18 +89,32 @@ class RunRecorder:
         )
         self.db.add(step)
         await self.db.flush()
-        started = time.perf_counter()
+        self._step_starts[step.id] = time.perf_counter()
+        return step
+
+    async def end_step(self, step: RunStep, exc: BaseException | None = None) -> None:
+        if isinstance(exc, asyncio.CancelledError):
+            step.status = "cancelled"
+            step.error = "Step cancelled."
+        elif exc is not None:
+            step.status = "failed"
+            step.error = str(exc)
+        else:
+            step.status = "completed"
+        started = self._step_starts.pop(step.id, time.perf_counter())
+        step.latency_ms = max(1, int((time.perf_counter() - started) * 1000))
+        await self.db.flush()
+
+    @asynccontextmanager
+    async def step(self, node: str, *, tool: str | None = None) -> AsyncIterator[RunStep]:
+        step = await self.start_step(node, tool=tool)
         try:
             yield step
         except BaseException as exc:
-            step.status = "cancelled" if isinstance(exc, asyncio.CancelledError) else "failed"
-            step.error = "Step cancelled." if isinstance(exc, asyncio.CancelledError) else str(exc)
+            await self.end_step(step, exc)
             raise
         else:
-            step.status = "completed"
-        finally:
-            step.latency_ms = max(1, int((time.perf_counter() - started) * 1000))
-            await self.db.flush()
+            await self.end_step(step)
 
     async def record_attempt(
         self,

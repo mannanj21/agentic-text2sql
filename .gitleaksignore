@@ -1,2 +1,5 @@
-# Ignore example env file which contains safe placeholders
-.env.example
+# Deterministic and ephemeral test-only Fernet keys. Each entry is bound to
+# the exact historical commit, file, rule, and line reported by Gitleaks.
+cea80b8d08e54e0d285d08f5504e92df706b3e53:.github/workflows/ci.yml:generic-api-key:123
+4cc62e9582a8cf41101e341ab4bde42cbf302d8f:.github/workflows/ci.yml:generic-api-key:102
+db00f91636a7c8fc78c6cf0c84d994aeda001c01:backend/tests/unit/test_llm_client.py:generic-api-key:18

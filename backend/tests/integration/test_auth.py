@@ -7,6 +7,7 @@ import uuid
 import pytest
 from httpx import ASGITransport, AsyncClient
 
+from app.api import auth as auth_api
 from app.api.main import app
 from app.database.core import AsyncSessionLocal
 
@@ -100,6 +101,29 @@ async def test_login_nonexistent_user() -> None:
         assert resp.status_code == 401
         # Same message as wrong password — no user enumeration
         assert resp.json()["detail"] == "Invalid credentials"
+
+
+async def test_login_is_rate_limited_without_user_enumeration(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    settings = auth_api.get_settings()
+    monkeypatch.setattr(
+        auth_api,
+        "get_settings",
+        lambda: settings.model_copy(update={"LOGIN_RATE_LIMIT_PER_MIN": 2}),
+    )
+    async with await get_client() as client:
+        for _ in range(2):
+            response = await login_user(client, unique_email("missing"), "doesnotmatter1")
+            assert response.status_code == 401
+        # Re-use an address: the third request must be blocked before verification.
+        email = unique_email("throttled")
+        for _ in range(2):
+            response = await login_user(client, email, "doesnotmatter1")
+            assert response.status_code == 401
+        response = await login_user(client, email, "doesnotmatter1")
+        assert response.status_code == 429
+        assert response.headers["retry-after"].isdigit()
 
 
 async def test_logout_clears_cookie() -> None:

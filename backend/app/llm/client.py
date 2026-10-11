@@ -6,6 +6,7 @@ import asyncio
 import hashlib
 import json
 import random
+import time
 from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -38,7 +39,7 @@ class TokenUsage:
 
 
 class LLMClient:
-    """Complete messages as a Pydantic model through Gemini, Ollama, or fake LLMs."""
+    """Complete messages as a Pydantic model through hosted, local, or fake LLMs."""
 
     def __init__(
         self,
@@ -55,6 +56,7 @@ class LLMClient:
         self._cache_dir = cache_dir or Path(__file__).resolve().parents[3] / "evaluation" / "cache"
         self._sleep = sleep or asyncio.sleep
         self._random = random_fn
+        self._last_provider_request = 0.0
 
     async def aclose(self) -> None:
         if self._owns_http:
@@ -80,6 +82,7 @@ class LLMClient:
 
         request_messages = list(messages)
         for structured_attempt in range(2):
+            await self._pace_provider_request()
             raw, usage = await self._request(model, request_messages, schema)
             try:
                 parsed = schema.model_validate_json(raw)
@@ -100,6 +103,16 @@ class LLMClient:
             return parsed, usage
         raise AssertionError("unreachable")
 
+    async def _pace_provider_request(self) -> None:
+        """Optionally space uncached hosted calls (used by quota-bound evaluations)."""
+        interval = self.settings.LLM_MIN_INTERVAL_SECONDS
+        if interval <= 0:
+            return
+        delay = interval - (time.monotonic() - self._last_provider_request)
+        if delay > 0:
+            await self._sleep(delay)
+        self._last_provider_request = time.monotonic()
+
     def cache_key(self, model: str, messages: Sequence[Message], schema: type[BaseModel]) -> str:
         payload = {
             "provider": self.settings.LLM_PROVIDER,
@@ -116,18 +129,39 @@ class LLMClient:
     async def _request(
         self, model: str, messages: Sequence[Message], schema: type[BaseModel]
     ) -> tuple[str, TokenUsage]:
+        if self.settings.LLM_PROVIDER == "fake":
+            latency = self.settings.FAKE_LLM_LATENCY_MS / 1000
+            if latency:
+                await self._sleep(latency)
+            return json.dumps(self._fake_response(schema)), TokenUsage.zero()
         for attempt in range(self.settings.LLM_MAX_RETRIES + 1):
             try:
                 if self.settings.LLM_PROVIDER == "gemini":
                     return await self._gemini(model, messages, schema)
+                if self.settings.LLM_PROVIDER == "groq":
+                    return await self._groq(model, messages, schema)
                 if self.settings.LLM_PROVIDER == "ollama":
                     return await self._ollama(model, messages, schema)
-                raise LLMProviderError("The fake provider must use FakeLLM.")
+                raise LLMProviderError(f"Unsupported LLM provider: {self.settings.LLM_PROVIDER}")
             except (httpx.TransportError, LLMProviderError) as exc:
                 if attempt >= self.settings.LLM_MAX_RETRIES or not self._is_retryable(exc):
                     raise
                 await self._sleep((0.5 * (2**attempt)) + (self._random() * 0.1))
         raise AssertionError("unreachable")
+
+    @staticmethod
+    def _fake_response(schema: type[BaseModel]) -> dict[str, Any]:
+        """Return safe deterministic structured output for local platform tests."""
+        fields = set(schema.model_fields)
+        if "intent" in fields:
+            return {"intent": "DATABASE_QUERY", "standalone_question": "synthetic query"}
+        if {"sql", "tables_used", "assumptions"} <= fields:
+            return {"sql": "SELECT 1 AS value", "tables_used": [], "assumptions": []}
+        if "answer" in fields:
+            return {"answer": "Synthetic platform-mode response.", "assumptions": []}
+        if "tables" in fields and "joins" in fields:
+            return {"tables": [], "joins": [], "filters": [], "group_by": []}
+        raise LLMProviderError(f"Fake provider has no response for schema {schema.__name__}.")
 
     async def _gemini(
         self, model: str, messages: Sequence[Message], schema: type[BaseModel]
@@ -194,9 +228,43 @@ class LLMClient:
         completion = int(data.get("eval_count", 0) or 0)
         return str(text), self._usage(prompt, completion, prompt + completion, model)
 
+    async def _groq(
+        self, model: str, messages: Sequence[Message], schema: type[BaseModel]
+    ) -> tuple[str, TokenUsage]:
+        """Use Groq's OpenAI-compatible Chat Completions structured-output API."""
+        response = await self._http.post(
+            f"{self.settings.GROQ_BASE_URL.rstrip('/')}/chat/completions",
+            headers={"Authorization": f"Bearer {self._api_key()}"},
+            json={
+                "model": model,
+                "messages": list(messages),
+                "response_format": {
+                    "type": "json_schema",
+                    "json_schema": {
+                        "name": schema.__name__.lower(),
+                        "strict": False,
+                        "schema": schema.model_json_schema(),
+                    },
+                },
+            },
+        )
+        self._raise_for_status(response)
+        data = response.json()
+        try:
+            text = data["choices"][0]["message"]["content"]
+        except (KeyError, IndexError, TypeError) as exc:
+            raise LLMProviderError("Groq returned no response content.") from exc
+        usage = data.get("usage", {})
+        return str(text), self._usage(
+            int(usage.get("prompt_tokens", 0) or 0),
+            int(usage.get("completion_tokens", 0) or 0),
+            int(usage.get("total_tokens", 0) or 0),
+            model,
+        )
+
     def _api_key(self) -> str:
         if self.settings.LLM_API_KEY is None or not self.settings.LLM_API_KEY.get_secret_value():
-            raise LLMProviderError("LLM_API_KEY is required when LLM_PROVIDER=gemini.")
+            raise LLMProviderError("LLM_API_KEY is required for the selected hosted provider.")
         return self.settings.LLM_API_KEY.get_secret_value()
 
     @staticmethod

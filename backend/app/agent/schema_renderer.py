@@ -5,6 +5,7 @@ from __future__ import annotations
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import get_settings
 from app.database.models import Connection, SchemaColumn, SchemaRelationship, SchemaTable
 
 
@@ -14,6 +15,7 @@ async def render_schema_ddl(connection: Connection, db: AsyncSession) -> str:
     Sensitive columns are excluded entirely.  Foreign-key references are
     appended as REFERENCES comments so the LLM can follow join paths.
     """
+    include_descriptions = get_settings().INCLUDE_SCHEMA_DESCRIPTIONS
     # Load tables with their columns eagerly
     tables = (
         await db.scalars(
@@ -52,7 +54,7 @@ async def render_schema_ddl(connection: Connection, db: AsyncSession) -> str:
     for table in tables:
         qualified = f"{table.schema}.{table.name}"
         header = f"CREATE TABLE {qualified} ("
-        if table.description:
+        if include_descriptions and table.description:
             lines.append(f"-- {table.description}")
         if table.row_estimate is not None:
             lines.append(f"-- ~{table.row_estimate:,} rows")
@@ -79,7 +81,7 @@ async def render_schema_ddl(connection: Connection, db: AsyncSession) -> str:
                 pk_cols.append(col.name)
             if col.id in fk_map:
                 parts.append(f"-- FK → {fk_map[col.id]}")
-            if col.description:
+            if include_descriptions and col.description:
                 parts.append(f"-- {col.description}")
             col_lines.append(" ".join(parts))
 

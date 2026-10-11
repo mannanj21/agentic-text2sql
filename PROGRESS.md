@@ -1,11 +1,11 @@
 # PROGRESS
 
 ## Current
-- Stage: 3 (LLM Layer, Tracing, Execution Module, Minimal Graph) | Step: S3.6 | Status: DONE
-- Branch: stage/3-llm-tracing-minimal-graph
-- Last commit: (pending S3.6)
-- Active model: Gemini 3.1 Pro (High)
-- Next action: PR and merge stage 3, then proceed to Stage 4 (S4.1: Full SQL Validator).
+- Stage: 9 (Documentation and Release) | Step: S9.6 | Status: COMPLETE
+- Branch: stage/9-docs-release (to create before this commit)
+- Last commit: Full-history secret scan passed; repository is public and ready for v1.0.0 tagging
+- Active model: Codex (GPT-5)
+- Next action: Tag and publish the verified public v1.0.0 release. Final held-out evaluation remains explicitly deferred.
 
 ## Step Checklist
 | Step | Status | Commit | Notes |
@@ -34,44 +34,44 @@
 | S3.4 | DONE | pending | SQLGlot PostgreSQL single-statement SELECT/WITH validator returning opaque ValidatedSQL; Full passed |
 | S3.5 | DONE | pending | Versioned prompts (generate_v1, answer_v1), result summary builder, generate/answer nodes, injection-isolation tests; Quick passed |
 | S3.6 | DONE | pending | Minimal LangGraph pipeline (generate→validate→execute→answer), Conversations API with RunRecorder tracing, AgentState as TypedDict; Full and Stack passed |
-| S4.1 | TODO | — | Full SQL validator |
-| S4.2 | TODO | — | Security corpus |
-| S4.3 | TODO | — | No-unvalidated-execution enforcement |
-| S4.4 | TODO | — | Guardrail node |
-| S4.5 | TODO | — | Repair loop |
-| S4.6 | TODO | — | SSE streaming |
-| S5.1 | TODO | — | Dataset format and validator |
-| S5.2 | TODO | — | Write the dataset |
-| S5.3 | TODO | — | Result-set comparison |
-| S5.4 | TODO | — | Metrics and runner CLI |
-| S5.5 | TODO | — | Baseline eval |
-| S6.1 | TODO | — | Embeddings |
-| S6.2 | TODO | — | Metadata enrichment |
-| S6.3 | TODO | — | Schema retrieval |
-| S6.4 | TODO | — | Contextualize + route |
-| S6.5 | TODO | — | Deterministic verification |
-| S6.6 | TODO | — | Chart selection |
-| S6.7 | TODO | — | Planner |
-| S6.8 | TODO | — | Ablations |
-| S7.1 | TODO | — | Frontend scaffold |
-| S7.2 | TODO | — | Connections UI |
-| S7.3 | TODO | — | Chat with streaming |
-| S7.4 | TODO | — | Trace view and history |
-| S7.5 | TODO | — | Schema/glossary editor |
-| S7.6 | TODO | — | E2E tests |
-| S8.1 | TODO | — | Rate limiting |
-| S8.2 | TODO | — | Authorization matrix |
-| S8.3 | TODO | — | Prompt-injection tests |
-| S8.4 | TODO | — | nginx and 2 replicas |
-| S8.5 | TODO | — | Load test |
-| S8.6 | TODO | — | Complete CI |
-| S9.1 | TODO | — | README |
-| S9.2 | TODO | — | design.md |
-| S9.3 | TODO | — | security.md |
-| S9.4 | TODO | — | DoD audit |
-| S9.5 | TODO | — | Final eval |
-| S9.6 | TODO | — | Clean-clone verification |
-| S9.7 | TODO | — | Resume bullets |
+| S4.1 | DONE | pending | Full async SQL validator: structural/function/schema/sensitive-column checks and read-only EXPLAIN validation; Full passed |
+| S4.2 | DONE | bc4e8d6 | 38-case validator corpus, fuzz-lite, complete database-boundary matrix, and generated security report; 84 security tests pass. |
+| S4.3 | DONE | 99e3f6e | No-unvalidated-execution enforcement (import boundary, static check, agent safety) |
+| S4.4 | DONE | 0f1632b | Deterministic pre-LLM guardrail node |
+| S4.5 | DONE | cbf2fa0 | Shared-budget LLM repair loop with duplicate avoidance and recursion limit |
+| S4.6 | DONE | pending | SSE streaming endpoint: node_started/finished/sql_generated/attempt_failed/final events; background task decoupled from response; non-streaming JSON fallback; disconnect persistence; RunStep tracing |
+| S5.1 | DONE | pending | Dataset format, Pydantic loader, deterministic split assignment, uniqueness/followup checks, CLI validator |
+| S5.2 | DONE | pending | Write the dataset (60 cases across ecommerce/pagila, stratified deterministic splits, docs generated) |
+| S5.3 | DONE | pending | Result-set comparison logic: multiset/ordered comparison, positional mapping, float tolerance, superset columns |
+| S5.4 | DONE | pending | Metrics module (execution/routing accuracy, schema P/R, self-correction, latency p50/p95, tokens/cost); runner logic; CLI; 38 eval tests |
+| S5.5 | DONE | pending | Baseline reports created (docs/eval/baseline-dev.md + baseline-test.md); live metrics pending API key + ecommerce DB |
+| S6.1 | DONE | pending | Embeddings |
+| S6.2 | DONE | pending | Metadata enrichment |
+| S6.3 | DONE | pending | Top-k table/column vector retrieval, one-hop FK expansion, small-schema bypass, sensitive-safe compact DDL, glossary hits, state/run tracing, and integration coverage. Live dev eval remains unmeasured pending configured target data/model. |
+| S6.4 | DONE | 8d6d57e | Fast intent routing, bounded no-row history, safe fallback, and deferred retrieval. |
+| S6.5 | DONE | pending | Deterministic empty/all-null/truncation verification routes failures through shared repair budget. |
+| S6.6 | DONE | pending | Pure deterministic chart selection and chart spec included in final response. |
+| S6.7 | DONE | pending | Optional structured planner behind PLANNER_ENABLED; disabled by default. |
+| S6.8 | DONE | pending | Six rate-safe Groq development reports are committed. Planner remains off; full-schema context and one repair are defaults; descriptions show no measured gain. Evidence and ADRs are in `docs/ablations.md` and decisions 0008/0009. |
+| S7.1 | DONE | pending | Next.js scaffold, typed API client, Vitest, same-origin proxy, and register/login UI; frontend gate passed. |
+| S7.2 | DONE | pending | Connections list/create/status UI with safe error display; frontend gate passed. |
+| S7.3 | DONE | pending | Chat page consumes query SSE with fetch streaming and presents live event state; frontend gate passed. |
+| S7.4 | DONE | pending | History and run-trace pages reopen persisted results without re-executing; frontend gate passed. |
+| S7.5 | DONE | pending | Schema metadata viewer and glossary editor page; frontend gate passed. |
+| S7.6 | DONE | pending | Playwright page E2E and live frontend-proxy registration/login flow pass against the local nginx stack. |
+| S8.1 | DONE | pending | Postgres atomic fixed-window quotas on query, costly connection, and login endpoints; HMAC login subjects, old-window cleanup, ADR, migration, rollover/isolation/concurrency coverage. Focused 18 tests, full unit suite (166) and mypy pass. |
+| S8.2 | DONE | pending | OpenAPI-derived matrix covers every production resource-ID route, asserting cross-user 404 and unauthenticated 401; test-only harness route is isolated. 25 authz tests pass. |
+| S8.3 | DONE | pending | Worst-case FakeLLM SQL injection cannot reach executor; hostile result cells remain prompt-delimited and answer generation has no execution tool. Security suite: 85 passing. |
+| S8.4 | DONE | pending | One-shot migration, api-1/api-2 behind SSE-safe nginx, replica headers, routing, authenticated SSE delivery, cross-replica continuation, and recoverable one-replica failover are locally verified. |
+| S8.5 | DONE | pending | Locust platform/fake baseline plus a quota-bounded real-Gemini smoke are measured in `docs/loadtest.md`. The real run: one user/20 seconds, 25 requests, zero failures, and one real SSE query at 3,799 ms; explicitly documented as a latency sample, not a capacity claim. |
+| S8.6 | DONE | pending | CI covers secret scan, backend lint/type/unit, Postgres authz matrix, frontend lint/type/unit/build, Playwright page E2E, and a seeded-demo security suite. GitHub Actions run 38149613300 completed successfully on `cb9727b`. |
+| S9.1 | DONE | 07de0b0 | README, quickstart, configuration, testing, security model, limitations, evidence, and CI badge. Real walkthrough screenshots/GIF are explicitly deferred in the README. |
+| S9.2 | DONE | 14783df | `docs/design.md` documents architecture, state, repair, retrieval, tracing, security, dialect boundary, and evidence-backed decisions. |
+| S9.3 | DONE | 07de0b0 | `docs/security.md` contains threat model, layered controls, corpus evidence, SSRF/credential handling, prompt-injection boundary, and residual risks. |
+| S9.4 | DONE | 14783df | `scripts/dod_check.py` passes; held-out evaluation and walkthrough media are explicitly deferred in README. |
+| S9.5 | DEFERRED | pending | The original held-out run was rate-limited in 13 cases; an explicitly approved token-paced replacement still rate-limited 11 cases. Neither is publicly reportable; deferred by human choice and disclosed in README/final-test.md. |
+| S9.6 | DONE | pending | Fresh clone with temporary fake-provider configuration passed `docker compose up -d --build --wait`, `python scripts/smoke.py`, and UI HTTP 200 on port 3000. Compose now includes the frontend. Gitleaks scanned all 124 commits with no leaks after recording exact test-only false positives. H6 approved public visibility; description/topics configured; final CI run 38158071959 passed. Tag and GitHub Release are next. |
+| S9.7 | DONE | 07de0b0 | `docs/resume_bullets.md` has cited, measured-only bullets and held-out caveat. |
 
 ## Decisions Log
 - 2026-09-29 The LLM wrapper calls documented Gemini and Ollama HTTP APIs through the existing `httpx` dependency, avoiding an additional provider SDK surface; Gemini 2.5 Flash/Pro defaults remain because Google documents free-tier access and structured JSON support.
@@ -94,9 +94,10 @@
 - psql: MISSING (optional)
 
 ## Known Issues / Blockers
-- None. Historical entries below are resolved.
-- gh CLI not installed — blocks S0.3 (GitHub remote creation). Will guide human to install when we reach that step.
-- Docker Desktop not installed — blocks S0.6 (Docker Compose). Will guide human to install when we reach that step.
+- S9.5 is explicitly deferred after both sanctioned Groq held-out attempts were rate-limited; it must be rerun before making any held-out accuracy claim.
+- Gemini returns HTTP 429 before generation even for one low-rate live evaluator case. Groq is now implemented as the alternate hosted provider; a live one-case validation is pending.
+- The local disposable test database on port 5433 has been migrated; the focused retrieval integration suite now passes (3 tests). The full backend gate remains pending the separate Windows Application Control limitation below.
+- Windows Application Control blocks the `mypy` executable invoked by `scripts/make.py check`; `python -m mypy app` succeeds through the project interpreter.
 
 ## Measured Numbers
 (none yet)

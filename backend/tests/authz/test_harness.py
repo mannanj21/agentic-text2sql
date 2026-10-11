@@ -36,8 +36,14 @@ async def get_test_resource(
 @pytest.fixture(autouse=True)
 def setup_mock_router():
     app.include_router(mock_router)
+    app.openapi_schema = None
     yield
-    app.routes = [r for r in app.routes if getattr(r, "path", "") != "/test-resource/{resource_id}"]
+    app.router.routes[:] = [
+        route
+        for route in app.router.routes
+        if getattr(route, "path", "") != "/test-resource/{resource_id}"
+    ]
+    app.openapi_schema = None
 
 
 @pytest.mark.asyncio

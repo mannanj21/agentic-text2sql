@@ -8,6 +8,10 @@ import subprocess
 import sys
 import time
 
+if sys.platform == "win32":
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
+
 def run(cmd: str, check: bool = True, capture: bool = False) -> subprocess.CompletedProcess:
     return subprocess.run(
         cmd,

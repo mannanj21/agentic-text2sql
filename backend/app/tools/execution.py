@@ -76,3 +76,35 @@ async def execute(connection: Connection, sql: ValidatedSQL) -> ExecutionResult:
         raise ExecutionError(classify_error(exc), "Target database query failed.") from exc
     rows = [list(row) for row in fetched[: settings.MAX_RESULT_ROWS]]
     return ExecutionResult(columns, rows, len(rows), len(fetched) > settings.MAX_RESULT_ROWS)
+
+
+async def explain(connection: Connection, sql: str) -> None:
+    """Run EXPLAIN on unvalidated SQL to catch database-level errors safely.
+
+    This is intended to be called by the validator before emitting ValidatedSQL.
+    """
+    settings = get_settings()
+    target = resolve_target(
+        connection.host, connection.port, allow_private_hosts=settings.ALLOW_PRIVATE_HOSTS
+    )
+    password = CredentialCipher(settings.ENCRYPTION_KEY).decrypt(connection.encrypted_password)
+    try:
+        async with (
+            await psycopg.AsyncConnection.connect(
+                host=target.host,
+                hostaddr=target.hostaddr,
+                port=target.port,
+                dbname=connection.database,
+                user=connection.username,
+                password=password,
+                connect_timeout=5,
+            ) as db,
+            db.transaction(),
+            db.cursor() as cursor,
+        ):
+            await cursor.execute("SET TRANSACTION READ ONLY")
+            await cursor.execute(f"SET LOCAL statement_timeout = {settings.STATEMENT_TIMEOUT_MS}")
+            await cursor.execute(f"SET LOCAL lock_timeout = {settings.LOCK_TIMEOUT_MS}")
+            await cursor.execute(f"EXPLAIN {sql}")
+    except psycopg.Error as exc:
+        raise ExecutionError(classify_error(exc), f"Target database EXPLAIN failed: {exc}") from exc
