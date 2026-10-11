@@ -39,6 +39,7 @@ class Settings(BaseSettings):
     STRONG_MODEL: str = "gemini-2.5-flash"
     LLM_TIMEOUT_SECONDS: float = 30.0
     LLM_MAX_RETRIES: int = 3
+    LLM_MIN_INTERVAL_SECONDS: float = 0.0
     FAKE_LLM_LATENCY_MS: int = 0
 
     # --- Ollama ---

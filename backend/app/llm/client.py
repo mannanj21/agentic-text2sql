@@ -6,6 +6,7 @@ import asyncio
 import hashlib
 import json
 import random
+import time
 from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -55,6 +56,7 @@ class LLMClient:
         self._cache_dir = cache_dir or Path(__file__).resolve().parents[3] / "evaluation" / "cache"
         self._sleep = sleep or asyncio.sleep
         self._random = random_fn
+        self._last_provider_request = 0.0
 
     async def aclose(self) -> None:
         if self._owns_http:
@@ -80,6 +82,7 @@ class LLMClient:
 
         request_messages = list(messages)
         for structured_attempt in range(2):
+            await self._pace_provider_request()
             raw, usage = await self._request(model, request_messages, schema)
             try:
                 parsed = schema.model_validate_json(raw)
@@ -99,6 +102,16 @@ class LLMClient:
                 self._write_cache(cache_key, parsed, usage)
             return parsed, usage
         raise AssertionError("unreachable")
+
+    async def _pace_provider_request(self) -> None:
+        """Optionally space uncached hosted calls (used by quota-bound evaluations)."""
+        interval = self.settings.LLM_MIN_INTERVAL_SECONDS
+        if interval <= 0:
+            return
+        delay = interval - (time.monotonic() - self._last_provider_request)
+        if delay > 0:
+            await self._sleep(delay)
+        self._last_provider_request = time.monotonic()
 
     def cache_key(self, model: str, messages: Sequence[Message], schema: type[BaseModel]) -> str:
         payload = {
