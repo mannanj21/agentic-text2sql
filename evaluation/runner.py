@@ -190,7 +190,7 @@ async def run_case(ctx: RunnerContext, case: DatasetCase) -> EvalResult:
                 try:
                     p_cols, p_rows = await _run_eval_sql(ctx, conn, final_sql)
                     pred_rows = p_rows
-                    pred_columns = [c["name"] for c in p_cols]
+                    pred_columns = p_cols
                     pred_row_count = len(p_rows)
                 except Exception as e:
                     error_msg = str(e)
@@ -214,8 +214,8 @@ async def run_case(ctx: RunnerContext, case: DatasetCase) -> EvalResult:
             steps = (
                 await ctx.db.scalars(select(RunStep).where(RunStep.run_id == recorder.run_id))
             ).all()
-            tokens = sum(step.tokens for step in steps)
-            cost = sum(step.cost for step in steps)
+            tokens = sum((step.tokens_in or 0) + (step.tokens_out or 0) for step in steps)
+            cost = sum(step.cost or 0.0 for step in steps)
             
             return EvalResult(
                 case_id=case.id,

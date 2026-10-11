@@ -3,7 +3,7 @@
 ## Current
 - Stage: 8 (Hardening) | Step: S8.6 | Status: IN PROGRESS
 - Branch: stage/6-retrieval-routing-ablations
-- Last commit: S6.8 evaluator repair is in progress; local evaluation now uses encrypted read-only demo connections and schema synchronization, pending a one-case validation
+- Last commit: S6.8 evaluator repair verified with a successful one-case real-Gemini dev run; ablation configs are next
 - Active model: Codex (GPT-5)
 - Next action: Validate one dev evaluation case after the evaluator repair, add ablation configs/reports, and rerun CI after Docker Hub token-service recovery.
 
@@ -52,7 +52,7 @@
 | S6.5 | DONE | pending | Deterministic empty/all-null/truncation verification routes failures through shared repair budget. |
 | S6.6 | DONE | pending | Pure deterministic chart selection and chart spec included in final response. |
 | S6.7 | DONE | pending | Optional structured planner behind PLANNER_ENABLED; disabled by default. |
-| S6.8 | IN PROGRESS | pending | The evaluator now uses encrypted local read-only demo credentials, correct ports, per-case conversations, metadata sync, a Windows-compatible event loop, production SQL validation/execution, and redacted HTTP-client logs. One-case validation reached Gemini and target validation; remaining fixes are RunStep token accounting and gold-query validation for sensitive-table wildcards before ablation configs/reports. |
+| S6.8 | IN PROGRESS | pending | The evaluator now uses encrypted local read-only demo credentials, correct ports, per-case conversations, metadata sync, a Windows-compatible event loop, production SQL validation/execution, and redacted HTTP-client logs. One real-Gemini dev case now reports 100% success/accuracy (3.96 s); Flash is the safe default after the previous strong-model 404. Add config support and measured ablation reports next. |
 | S7.1 | DONE | pending | Next.js scaffold, typed API client, Vitest, same-origin proxy, and register/login UI; frontend gate passed. |
 | S7.2 | DONE | pending | Connections list/create/status UI with safe error display; frontend gate passed. |
 | S7.3 | DONE | pending | Chat page consumes query SSE with fetch streaming and presents live event state; frontend gate passed. |

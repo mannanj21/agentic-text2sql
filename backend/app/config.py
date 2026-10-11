@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     LLM_PROVIDER: Literal["gemini", "ollama", "fake"] = "fake"
     LLM_API_KEY: SecretStr | None = None
     FAST_MODEL: str = "gemini-2.5-flash"
-    STRONG_MODEL: str = "gemini-2.5-pro"
+    STRONG_MODEL: str = "gemini-2.5-flash"
     LLM_TIMEOUT_SECONDS: float = 30.0
     LLM_MAX_RETRIES: int = 3
     FAKE_LLM_LATENCY_MS: int = 0
