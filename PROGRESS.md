@@ -2,10 +2,10 @@
 
 ## Current
 - Stage: 9 (Documentation and Release) | Step: S9.6 | Status: COMPLETE
-- Branch: stage/9-docs-release (to create before this commit)
-- Last commit: Full-history secret scan passed; repository is public and ready for v1.0.0 tagging
+- Branch: main (release record branch: stage/9-release-record)
+- Last commit: v1.0.0 published from merged Stage 9 release branch
 - Active model: Codex (GPT-5)
-- Next action: Tag and publish the verified public v1.0.0 release. Final held-out evaluation remains explicitly deferred.
+- Next action: Project release complete. Before publishing any held-out accuracy claim, rerun S9.5 with a provider quota that can finish the test split.
 
 ## Step Checklist
 | Step | Status | Commit | Notes |
@@ -70,7 +70,7 @@
 | S9.3 | DONE | 07de0b0 | `docs/security.md` contains threat model, layered controls, corpus evidence, SSRF/credential handling, prompt-injection boundary, and residual risks. |
 | S9.4 | DONE | 14783df | `scripts/dod_check.py` passes; held-out evaluation and walkthrough media are explicitly deferred in README. |
 | S9.5 | DEFERRED | pending | The original held-out run was rate-limited in 13 cases; an explicitly approved token-paced replacement still rate-limited 11 cases. Neither is publicly reportable; deferred by human choice and disclosed in README/final-test.md. |
-| S9.6 | DONE | pending | Fresh clone with temporary fake-provider configuration passed `docker compose up -d --build --wait`, `python scripts/smoke.py`, and UI HTTP 200 on port 3000. Compose now includes the frontend. Gitleaks scanned all 124 commits with no leaks after recording exact test-only false positives. H6 approved public visibility; description/topics configured; final CI run 38158071959 passed. Tag and GitHub Release are next. |
+| S9.6 | DONE | c888fa5 / v1.0.0 | Fresh clone with temporary fake-provider configuration passed `docker compose up -d --build --wait`, `python scripts/smoke.py`, and UI HTTP 200 on port 3000. Compose now includes the frontend. Gitleaks scanned all 124 commits with no leaks after recording exact test-only false positives. H6 approved public visibility; description/topics configured; CI passed; PR #5 merged; public release [v1.0.0](https://github.com/mannanj21/agentic-text2sql/releases/tag/v1.0.0) published. |
 | S9.7 | DONE | 07de0b0 | `docs/resume_bullets.md` has cited, measured-only bullets and held-out caveat. |
 
 ## Decisions Log
