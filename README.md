@@ -92,6 +92,8 @@ and rate limiting. See [docs/security.md](docs/security.md).
   revisit this choice for materially larger schemas.
 - No fine-grained RBAC, cloud warehouses, MySQL, result-checking LLM, or
   dashboard UI in v1.
+- The demo walkthrough has no committed screenshots or GIF yet; use the local
+  Docker quickstart to view the real UI.
 
 ## Evidence
 

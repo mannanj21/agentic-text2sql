@@ -1,11 +1,11 @@
 # PROGRESS
 
 ## Current
-- Stage: 9 (Documentation and Release) | Step: S9.3 / S9.6 / S9.7 | Status: IN PROGRESS
-- Branch: stage/6-retrieval-routing-ablations
-- Last commit: S6.8 evaluator measurement repair; descriptions/raw-name config and accurate routing, retrieval, token, and cost reporting are ready for ablations
+- Stage: 9 (Documentation and Release) | Step: S9.6 | Status: IN PROGRESS
+- Branch: stage/9-docs-release (to create before this commit)
+- Last commit: S9 documentation now discloses the final-evaluation deferral and records the security model
 - Active model: Codex (GPT-5)
-- Next action: Complete security/resume documentation and clean-clone verification; final held-out evaluation is explicitly deferred.
+- Next action: Run clean-clone verification and full-history secret scan; final held-out evaluation is explicitly deferred.
 
 ## Step Checklist
 | Step | Status | Commit | Notes |
@@ -65,13 +65,13 @@
 | S8.4 | DONE | pending | One-shot migration, api-1/api-2 behind SSE-safe nginx, replica headers, routing, authenticated SSE delivery, cross-replica continuation, and recoverable one-replica failover are locally verified. |
 | S8.5 | DONE | pending | Locust platform/fake baseline plus a quota-bounded real-Gemini smoke are measured in `docs/loadtest.md`. The real run: one user/20 seconds, 25 requests, zero failures, and one real SSE query at 3,799 ms; explicitly documented as a latency sample, not a capacity claim. |
 | S8.6 | DONE | pending | CI covers secret scan, backend lint/type/unit, Postgres authz matrix, frontend lint/type/unit/build, Playwright page E2E, and a seeded-demo security suite. GitHub Actions run 38149613300 completed successfully on `cb9727b`. |
-| S9.1 | TODO | — | README |
-| S9.2 | TODO | — | design.md |
-| S9.3 | TODO | — | security.md |
-| S9.4 | TODO | — | DoD audit |
+| S9.1 | DONE | 07de0b0 | README, quickstart, configuration, testing, security model, limitations, evidence, and CI badge. Real walkthrough screenshots/GIF are explicitly deferred in the README. |
+| S9.2 | DONE | 14783df | `docs/design.md` documents architecture, state, repair, retrieval, tracing, security, dialect boundary, and evidence-backed decisions. |
+| S9.3 | DONE | 07de0b0 | `docs/security.md` contains threat model, layered controls, corpus evidence, SSRF/credential handling, prompt-injection boundary, and residual risks. |
+| S9.4 | DONE | 14783df | `scripts/dod_check.py` passes; held-out evaluation and walkthrough media are explicitly deferred in README. |
 | S9.5 | DEFERRED | pending | The original held-out run was rate-limited in 13 cases; an explicitly approved token-paced replacement still rate-limited 11 cases. Neither is publicly reportable; deferred by human choice and disclosed in README/final-test.md. |
 | S9.6 | TODO | — | Clean-clone verification |
-| S9.7 | TODO | — | Resume bullets |
+| S9.7 | DONE | 07de0b0 | `docs/resume_bullets.md` has cited, measured-only bullets and held-out caveat. |
 
 ## Decisions Log
 - 2026-09-29 The LLM wrapper calls documented Gemini and Ollama HTTP APIs through the existing `httpx` dependency, avoiding an additional provider SDK surface; Gemini 2.5 Flash/Pro defaults remain because Google documents free-tier access and structured JSON support.
